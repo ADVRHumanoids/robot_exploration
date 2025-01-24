@@ -1,0 +1,8 @@
+<launch>
+     
+    <node pkg="frontier_extraction" type="FrontierExtractionNode" name="FrontierExtractionNode"/>
+    
+    <arg name="BT_file" default="$(find exploration_manager)/config/exploration_bt.xml"/>
+    <node pkg="exploration_manager" name="exploration_main" type="exploration_main" output="screen" args="$(arg BT_file)"/>
+
+</launch> 

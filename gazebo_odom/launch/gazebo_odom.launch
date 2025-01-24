@@ -1,0 +1,13 @@
+<launch>
+
+    <arg name="model_name" default="centauro"/>
+    <arg name="world_frame" default="map"/>
+    <arg name="base_frame" default="pelvis"/>
+
+    <node pkg="gazebo_odom" type="sim_odom_connect" name="sim_odom_connect">
+        <param name="model_name" value="$(arg model_name)"/>
+        <param name="world_frame" value="$(arg world_frame)"/>
+        <param name="base_frame" value="$(arg base_frame)"/>
+    </node>
+
+</launch>
