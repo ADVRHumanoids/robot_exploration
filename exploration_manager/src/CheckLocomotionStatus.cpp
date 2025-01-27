@@ -3,6 +3,8 @@
 CheckLocomotionStatus::CheckLocomotionStatus(const std::string& name) :
     BT::AsyncActionNode(name, {})
 {
+    ros::param::get("robot_exploration/min_nav_target_distance", min_nav_target_distance_);
+    min_nav_target_distance_ = min_nav_target_distance_*min_nav_target_distance_; // Consider squared
 }
 //Check if Ros Nav succeed and also that the robot is "close enough" to desired location
 BT::NodeStatus CheckLocomotionStatus::tick(){
@@ -11,9 +13,9 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
 
     //Get robot's pose
     try {
-        bt_data.now = ros::Time(0);
-        listener_.waitForTransform("map", "pelvis", bt_data.now, ros::Duration(0.5f));
-        listener_.lookupTransform("map", "pelvis", bt_data.now, bt_data.last_robot_pose);
+        bt_data_->now = ros::Time::now();
+        listener_.waitForTransform(bt_data_->world_frame, bt_data_->base_frame, bt_data_->now, ros::Duration(0.5f));
+        listener_.lookupTransform(bt_data_->world_frame, bt_data_->base_frame, bt_data_->now, bt_data_->last_robot_pose);
 
     } catch ( tf::TransformException ex ) {
         ROS_ERROR ( "%s",ex.what() );
@@ -26,26 +28,26 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
     if(msg_->status_list.size() > 0){
         // SUCCEEDED
         if(msg_->status_list[msg_->status_list.size()-1].status == 3){
-            bt_data.is_driving = false;
-            bt_data.need_exploration = false;
-            bt_data.finished_exploration = true;
+            bt_data_->is_driving = false;
+            bt_data_->need_exploration = false;
+            bt_data_->finished_exploration = true;
             
             //Check distance to target (to avoid also checking SUCCEED of prev exec.)
-            if(pow(bt_data.last_robot_pose.getOrigin().x() - bt_data.locomotion_target.position.x,2) +
-               pow(bt_data.last_robot_pose.getOrigin().y() - bt_data.locomotion_target.position.y,2) < 0.04f){ // 0.20m   
+            if(pow(bt_data_->last_robot_pose.getOrigin().x() - bt_data_->locomotion_target.position.x,2) +
+               pow(bt_data_->last_robot_pose.getOrigin().y() - bt_data_->locomotion_target.position.y,2) < min_nav_target_distance_){
 
                 ROS_WARN("Nav Target Reached!");
                 
-                bt_data.is_driving = false;
-                bt_data.need_exploration = false;
-                bt_data.finished_exploration = true;
+                bt_data_->is_driving = false;
+                bt_data_->need_exploration = false;
+                bt_data_->finished_exploration = true;
                 return BT::NodeStatus::SUCCESS;
             }
         }
         else if(msg_->status_list[msg_->status_list.size()-1].status == 4){
-            bt_data.is_driving = false;
-            bt_data.need_exploration = true;
-            bt_data.finished_exploration = false;
+            bt_data_->is_driving = false;
+            bt_data_->need_exploration = true;
+            bt_data_->finished_exploration = false;
         }
     }
 

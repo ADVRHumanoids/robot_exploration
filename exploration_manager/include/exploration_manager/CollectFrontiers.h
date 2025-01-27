@@ -9,7 +9,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Core>
 
-#include <exploration_manager/common.h>
+#include <exploration_manager/SharedClass.h>
 
 #include <frontier_extraction/Frontier.h>
 #include <frontier_extraction/GetFrontiers.h>

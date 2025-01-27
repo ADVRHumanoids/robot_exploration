@@ -5,7 +5,7 @@
 #include "behaviortree_cpp_v3/behavior_tree.h"
 #include "behaviortree_cpp_v3/bt_factory.h"
 
-#include <exploration_manager/common.h>
+#include <exploration_manager/SharedClass.h>
 
 #include <tf/transform_listener.h>
 
@@ -25,7 +25,7 @@ class CollectObjectPose : public BT::AsyncActionNode
     
     tf::TransformListener listener_;
 
-    float angle_;
+    float angle_, distance_target_object_;
 };
 
 #endif

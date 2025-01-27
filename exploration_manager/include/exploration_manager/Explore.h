@@ -9,7 +9,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Core>
 
-#include <exploration_manager/common.h>
+#include <exploration_manager/SharedClass.h>
 
 #include <tf/transform_listener.h>
 using namespace BT;
@@ -29,6 +29,8 @@ class Explore : public BT::AsyncActionNode
     
     float cost_, cost_max_, squared_euclidean_distance_, squared_distance_to_prev_target_;
     int max_frontier_idx_;
+    float min_dist_frontier_robot_;
+    float cost_n_points_, cost_euclidean_distance_, cost_distance_prev_target_;
     
 };
 

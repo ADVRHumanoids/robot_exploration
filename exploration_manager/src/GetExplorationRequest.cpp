@@ -11,7 +11,7 @@ GetExplorationRequest::GetExplorationRequest(const std::string& name) :
 
 BT::NodeStatus GetExplorationRequest::tick(){
 
-    if(bt_data.finished_exploration){
+    if(bt_data_->finished_exploration){
         action_feedback_.finished = true;
         action_result_.found = true;
     }
@@ -39,13 +39,13 @@ void GetExplorationRequest::manageActionRequest(const exploration_manager::Reque
     }
     else{
         
-        bt_data.object_name = goal->object_name;
-        bt_data.need_exploration = true;
+        bt_data_->object_name = goal->object_name;
+        bt_data_->need_exploration = true;
         new_task_received_ = true;
 
         action_feedback_.finished = false;
         action_result_.found = false;
-        bt_data.finished_exploration = false;
+        bt_data_->finished_exploration = false;
 
         action_server_->setSucceeded(action_result_);
         action_server_->publishFeedback(action_feedback_);

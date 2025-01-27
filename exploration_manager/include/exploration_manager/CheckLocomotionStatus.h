@@ -5,7 +5,7 @@
 #include "behaviortree_cpp_v3/behavior_tree.h"
 #include "behaviortree_cpp_v3/bt_factory.h"
 
-#include <exploration_manager/common.h>
+#include <exploration_manager/SharedClass.h>
 
 #include <actionlib_msgs/GoalStatusArray.h>
 
@@ -29,6 +29,8 @@ class CheckLocomotionStatus : public BT::AsyncActionNode
     
     tf::TransformListener listener_;
     actionlib_msgs::GoalStatusArrayConstPtr msg_; 
+
+    float min_nav_target_distance_;
 };
 
 #endif

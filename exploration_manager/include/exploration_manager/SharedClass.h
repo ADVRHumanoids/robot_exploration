@@ -9,10 +9,10 @@
 
 #include <frontier_extraction/Frontier.h>
 
-class commonData
+class SharedClass
 {
   public:
-    std::string object_name;
+    std::string object_name, world_frame, base_frame;
 
     geometry_msgs::Pose locomotion_target;
     std::vector<frontier_extraction::Frontier> frontiers;
@@ -23,17 +23,22 @@ class commonData
     tf::StampedTransform last_robot_pose, object_pose;
     ros::Time now;
 
+    float min_nav_target_distance;
+
     //Constructor
-    commonData(){
+    SharedClass(){
       object_name = "obj";
+      world_frame = "map";
+      base_frame = "base_link";
       frontiers = {};
       need_exploration = false;
       is_driving = false;
       finished_exploration = false;
       // last_robot_pose = Eigen::Affine3d::Identity();
+      min_nav_target_distance = 0.04f;
     }
 };
 
-commonData bt_data;//= commonData();
+SharedClass *bt_data_;
 
 #endif

@@ -13,6 +13,8 @@
 
 #include <exploration_manager/IsExplorationRequired.h>
 
+#include <exploration_manager/SharedClass.h>
+
 
 int main(int argc, char **argv)
 {
@@ -28,6 +30,11 @@ int main(int argc, char **argv)
     }
 
     ros::NodeHandle nh;
+
+    bt_data_ = new SharedClass();
+
+    ros::param::get("robot_exploration/world_frame", bt_data_->world_frame);
+    ros::param::get("robot_exploration/base_frame", bt_data_->base_frame);
     
     // We use the BehaviorTreeFactory to register our custom nodes
     BT::BehaviorTreeFactory factory;
@@ -44,7 +51,7 @@ int main(int argc, char **argv)
     auto tree = factory.createTreeFromFile(argv[1]);
 
     PublisherZMQ publisher_zmq(tree);
-    BT::FileLogger logger_file(tree, "/home/alessio/eurobin_ws/bt_trace.fbl");
+    BT::FileLogger logger_file(tree, "bt_exploration.fbl");
 
     ros::Rate loop_rate(20);
     while(ros::ok()){

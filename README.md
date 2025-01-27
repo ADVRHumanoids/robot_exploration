@@ -31,3 +31,6 @@ Robot independent, provides as output the goal pose to reach, sent to the MoveBa
 
 # NOTE
 The input of the Exploration is the *frame_name* of the object that you want to find. The exploration checks in "KnownTargetPose" if such frame exists. If it exists, then a Nav Target is sent to the object. Otherwise, the robot will start/continue the exploration.
+
+
+Using frames, if the transform map-obj is no longer valid/published, then exploration resumes. 

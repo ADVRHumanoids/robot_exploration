@@ -6,7 +6,7 @@
 #include "behaviortree_cpp_v3/bt_factory.h"
 
 #include <ros/ros.h>
-#include <exploration_manager/common.h>
+#include <exploration_manager/SharedClass.h>
 
 #include <exploration_manager/RequestExplorationAction.h>
 #include <actionlib/server/simple_action_server.h>
