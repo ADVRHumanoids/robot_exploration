@@ -62,7 +62,7 @@ namespace frontier_extraction{
 
         int temp_pos_, temp_pos2_;
 
-        int max_cluster_;
+        int max_cluster_, min_frontier_points_;
 
         int i,j;
 

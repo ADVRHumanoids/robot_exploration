@@ -36,15 +36,17 @@ namespace frontier_extraction{
     }
 
     void FrontierExtractionManager::initParams(){
-        
+        min_frontier_points_ = 10;
     }
     
     bool FrontierExtractionManager::getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
              frontier_extraction::GetFrontiers::Response &res)
     {
+        // Collect occupancy map
         auto t1 = high_resolution_clock::now();
         grid_  = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>("projected_map",ros::Duration(5));
 
+        // Extract Frontiers
         auto t2 = high_resolution_clock::now();
         extractFrontiers();
         
@@ -52,6 +54,7 @@ namespace frontier_extraction{
 
         ROS_INFO("Frontier Points added: %ld", frontier_points_.size());
         
+        // Publish frontiers and set service response
         printMarkers();
         auto t4 = high_resolution_clock::now();
 
@@ -71,9 +74,9 @@ namespace frontier_extraction{
 
     void FrontierExtractionManager::setFrontierResponse(frontier_extraction::GetFrontiers::Response &res)
     {
-
+        // Fill response message with frontiers bigger than X pixels
         for(int i = 0; i < frontiers_dim_.size(); i++){
-            if(frontiers_dim_[i] >= 20){
+            if(frontiers_dim_[i] >= min_frontier_points_){
                 frontier_extraction::Frontier f;
 
                 f.centroid.x = centroids_[i][0];
@@ -90,7 +93,7 @@ namespace frontier_extraction{
    
     const bool FrontierExtractionManager::isFrontier(const int idx1, const int idx2){ 
          return ((grid_->data[idx1] == -1 && grid_->data[idx2] == 0) ||
-                (grid_->data[idx2] == -1 && grid_->data[idx1] == 0));
+                 (grid_->data[idx2] == -1 && grid_->data[idx1] == 0));
     }
 
     void FrontierExtractionManager::innerExtractFrontiers(const int idx){
@@ -181,7 +184,7 @@ namespace frontier_extraction{
             marker.action = visualization_msgs::Marker::ADD;
             marker.scale.x = marker.scale.y = marker.scale.z = 0.25;
 
-            if(frontiers_dim_[frontier_clustersing_[id]] < 20){
+            if(frontiers_dim_[frontier_clustersing_[id]] < min_frontier_points_){
                 id++;
                 continue;
             }
@@ -217,7 +220,7 @@ namespace frontier_extraction{
 
             marker.id = (id++);
 
-            if(frontiers_dim_[i] >= 20){
+            if(frontiers_dim_[i] >= min_frontier_points_){
                 centroids_[i][0] = centroids_[i][0]/static_cast<float>(frontiers_dim_[i]);
                 centroids_[i][1] = centroids_[i][1]/static_cast<float>(frontiers_dim_[i]);
 

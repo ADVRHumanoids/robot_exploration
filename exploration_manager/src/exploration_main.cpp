@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     auto tree = factory.createTreeFromFile(argv[1]);
 
     PublisherZMQ publisher_zmq(tree);
-    // BT::FileLogger logger_file(tree, "/home/alessio/eurobin_ws/bt_trace.fbl");
+    BT::FileLogger logger_file(tree, "/home/alessio/eurobin_ws/bt_trace.fbl");
 
     ros::Rate loop_rate(20);
     while(ros::ok()){

@@ -15,6 +15,8 @@
 #include <frontier_extraction/GetFrontiers.h>
 #include <tf/transform_listener.h>
 
+#include <actionlib_msgs/GoalID.h>
+
 using namespace BT;
 
 class CollectFrontiers : public BT::AsyncActionNode
@@ -31,8 +33,11 @@ class CollectFrontiers : public BT::AsyncActionNode
     
     tf::TransformListener listener_;
     ros::ServiceClient frontier_extract_srv_;
+    ros::Publisher nav_cancel_pub_;
   
     frontier_extraction::GetFrontiers get_frontiers_;
+
+    actionlib_msgs::GoalID cancel_nav_req_;
 
     //Timer
     ros::Time now_, prev_time_;

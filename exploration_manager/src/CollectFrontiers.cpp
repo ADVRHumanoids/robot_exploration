@@ -4,6 +4,7 @@ CollectFrontiers::CollectFrontiers(const std::string& name) :
     BT::AsyncActionNode(name, {})
 {
     frontier_extract_srv_ = nh_.serviceClient<frontier_extraction::GetFrontiers>("/get_frontiers");
+    nav_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 10);
 
     timer_frontiers_ = 3.0f; //5.0f;
     time_diff_ = 2.0f*timer_frontiers_;
@@ -42,7 +43,7 @@ BT::NodeStatus CollectFrontiers::tick(){
         if(bt_data.frontiers.size() == 0){
             ROS_WARN("No more frontiers! Exploration finished!");
             //Cancel Nav Pose
-            //TODO
+            nav_cancel_pub_.publish(cancel_nav_req_);
 
             bt_data.need_exploration = false;
             bt_data.is_driving = false;
