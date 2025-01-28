@@ -17,6 +17,7 @@ Robot independent, provides as output the goal pose to reach, sent to the MoveBa
 - sudo apt install ros-$ROS_DISTRO-aruco-detect
 - octomap
 - hhcm_perception [Optional]
+- opencv, numpy, skimage, scipy
 
 
 # How to launch [Only exploration]
