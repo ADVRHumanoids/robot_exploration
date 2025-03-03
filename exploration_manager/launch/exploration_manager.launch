@@ -1,7 +1,11 @@
 <launch>
+
+    <arg name="frontiers_2d" default="true"/>
      
-    <node pkg="frontier_extraction" type="FrontierExtractionNode" name="FrontierExtractionNode"/>
-    
+    <include file="$(find frontier_extraction)/launch/frontier_extraction.launch">
+        <arg name="frontiers_2d" value="$(arg frontiers_2d)"/>
+    </include>
+
     <rosparam command="load" file="$(find exploration_manager)/config/exploration_config.yaml"/>
 
     <arg name="BT_file" default="$(find exploration_manager)/config/exploration_bt.xml"/>

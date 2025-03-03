@@ -29,8 +29,10 @@ class Explore : public BT::AsyncActionNode
     
     float cost_, cost_max_, squared_euclidean_distance_, squared_distance_to_prev_target_;
     int max_frontier_idx_;
-    float min_dist_frontier_robot_;
-    float cost_n_points_, cost_euclidean_distance_, cost_distance_prev_target_;
+    float min_dist_frontier_robot_, temp_distance_;
+    float cost_n_points_, cost_euclidean_distance_, cost_distance_prev_target_, cost_neighbors_;
+
+    std::vector<uint8_t> close_frontiers_;
     
 };
 

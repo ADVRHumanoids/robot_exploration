@@ -12,6 +12,7 @@ robot_exploration:
     min_dist_frontier_robot: 0.25 # [m]
 
     cost_function:
-      n_points: 0.25
-      euclidean_distance: 15.0 # Closer to the robot, the better (multiplied by the inverse of the distance)
+      n_points: 0.20
+      euclidean_distance: 40.0 # Closer to the robot, the better (multiplied by the inverse of the distance)
       distance_prev_target: 125.0 # Close to previous target is better, to avoid switching from one side of the map to the other one
+      close_frontiers: 45.0
