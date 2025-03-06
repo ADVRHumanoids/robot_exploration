@@ -9,11 +9,13 @@ CollectObjectPose::CollectObjectPose(const std::string& name) :
 BT::NodeStatus CollectObjectPose::tick(){
     //Get objects's pose
     try {
-        std::cout << "Look for " << bt_data_->object_name << std::endl;
+        // std::cout << "Look for " << bt_data_->object_name << std::endl;
         bt_data_->now = ros::Time::now();
-        listener_.waitForTransform(bt_data_->world_frame, bt_data_->object_name, bt_data_->now, ros::Duration(1.0));
+        listener_.waitForTransform(bt_data_->world_frame, bt_data_->object_name, bt_data_->now, ros::Duration(0.5));
         listener_.lookupTransform(bt_data_->world_frame, bt_data_->object_name, bt_data_->now, bt_data_->object_pose);
     } catch ( tf::TransformException ex ) {
+        bt_data_->need_exploration = true;
+        bt_data_->known_object_pose = false;
         return BT::NodeStatus::FAILURE;
     }
 

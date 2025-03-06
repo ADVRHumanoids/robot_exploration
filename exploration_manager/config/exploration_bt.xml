@@ -5,10 +5,8 @@
         <RetryUntilSuccessful num_attempts="-1">
             <ForceFailure>
                 <Sequence>
-                    <Fallback name="Exploration Request">
-                        <Action ID="GetExplorationRequest"/>
-                        <Condition ID="IsExplorationRequired"/>
-                    </Fallback>
+                    <Action ID="CheckExplorationRequest"/>
+                    <Condition ID="IsExplorationRequired"/>
                     <Sequence name="LocomotionToTarget">
                         <Fallback name="DefineNavTarget">
                             <Action ID="CollectObjectPose"/>
@@ -32,7 +30,7 @@
         <Action ID="CollectFrontiers"/>
         <Action ID="CollectObjectPose"/>
         <Action ID="Explore"/>
-        <Action ID="GetExplorationRequest"/>
+        <Action ID="CheckExplorationRequest"/>
         <Condition ID="IsExplorationRequired"/>
         <Action ID="SendNavPose"/>
     </TreeNodesModel>

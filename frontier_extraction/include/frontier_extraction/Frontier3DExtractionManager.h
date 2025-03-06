@@ -24,7 +24,7 @@ namespace frontier_extraction{
     class Frontier3DExtractionManager {
 
     public:  
-        Frontier3DExtractionManager( std::string ns = "", double rate = 50.0 );
+        Frontier3DExtractionManager( std::string ns = "", double rate = 2.5 );
         ~Frontier3DExtractionManager();
         
         void main_loop(const ros::TimerEvent& timer);
@@ -42,8 +42,9 @@ namespace frontier_extraction{
 
         ros::ServiceServer get_frontiers_srv_;
         ros::Publisher marker_pub_;
+        ros::Subscriber occupancy_sub_;
 
-        Affine3d pelvis_T_map_;
+        point3d pelvis_pos_map_;
 
         octomap_msgs::Octomap::ConstPtr octomap_msg_;
         octomap::OcTree *octree_;
@@ -59,10 +60,9 @@ namespace frontier_extraction{
         bool frontier_true_;         // whether or not a frontier point
         bool belong_old_;            //whether or not belong to old group
         double distance_;
+        int num_occupied_;
 
         int min_frontier_points_;
-
-        int i,j;
 
         // ----- Private Methods ----
         void initROSNode(double rate);
@@ -75,6 +75,8 @@ namespace frontier_extraction{
         void printMarkers();
 
         bool isFrontierXY(const point3d &p);
+
+        void octomapCallback(const octomap_msgs::Octomap::ConstPtr& msg);
         
         bool getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
                              frontier_extraction::GetFrontiers::Response &res);

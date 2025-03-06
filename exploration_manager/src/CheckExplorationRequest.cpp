@@ -1,15 +1,13 @@
-#include <exploration_manager/GetExplorationRequest.h>
+#include <exploration_manager/CheckExplorationRequest.h>
 
-GetExplorationRequest::GetExplorationRequest(const std::string& name) :
+CheckExplorationRequest::CheckExplorationRequest(const std::string& name) :
     BT::AsyncActionNode(name, {})
 {
-    action_server_ = std::make_shared<ActionServer>(nh_, "/request_exploration", boost::bind(&GetExplorationRequest::manageActionRequest, this, _1), false);
+    action_server_ = std::make_shared<ActionServer>(nh_, "/request_exploration", boost::bind(&CheckExplorationRequest::manageActionRequest, this, _1), false);
     action_server_->start();
-
-    new_task_received_ = false;
 }
 
-BT::NodeStatus GetExplorationRequest::tick(){
+BT::NodeStatus CheckExplorationRequest::tick(){
 
     if(bt_data_->finished_exploration){
         action_feedback_.finished = true;
@@ -24,11 +22,11 @@ BT::NodeStatus GetExplorationRequest::tick(){
         action_server_->setSucceeded(action_result_);
         action_server_->publishFeedback(action_feedback_);
     }
-        
-    return BT::NodeStatus::FAILURE;
+    
+    return BT::NodeStatus::SUCCESS;
 }
 
-void GetExplorationRequest::manageActionRequest(const exploration_manager::RequestExplorationGoalConstPtr& goal)
+void CheckExplorationRequest::manageActionRequest(const exploration_manager::RequestExplorationGoalConstPtr& goal)
 {
     ROS_WARN("New Exploration Request!!");
 
@@ -40,18 +38,19 @@ void GetExplorationRequest::manageActionRequest(const exploration_manager::Reque
     else{
         
         bt_data_->object_name = goal->object_name;
+        bt_data_->known_object_pose = false;
+        bt_data_->force_frontier_update = true;
         bt_data_->need_exploration = true;
-        new_task_received_ = true;
+        bt_data_->finished_exploration = false;
 
         action_feedback_.finished = false;
         action_result_.found = false;
-        bt_data_->finished_exploration = false;
 
         action_server_->setSucceeded(action_result_);
         action_server_->publishFeedback(action_feedback_);
     }
 }
 
-void GetExplorationRequest::halt(){
+void CheckExplorationRequest::halt(){
 
 }

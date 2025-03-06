@@ -19,11 +19,12 @@ class SharedClass
     bool need_exploration, is_driving, finished_exploration;   
     // Eigen::Affine3d last_robot_pose;
 
-    //TF Listener and structs
+    //TF Transforms
     tf::StampedTransform last_robot_pose, object_pose;
     ros::Time now;
 
     float min_nav_target_distance;
+    bool known_object_pose, force_frontier_update;
 
     //Constructor
     SharedClass(){
@@ -34,6 +35,8 @@ class SharedClass
       need_exploration = false;
       is_driving = false;
       finished_exploration = false;
+      known_object_pose = false;
+      force_frontier_update = false;
       // last_robot_pose = Eigen::Affine3d::Identity();
       min_nav_target_distance = 0.04f;
     }

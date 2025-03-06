@@ -33,45 +33,51 @@ namespace frontier_extraction{
 
         get_frontiers_srv_ = nh_.advertiseService("get_frontiers", &Frontier3DExtractionManager::getFrontiersSrv, this);
         marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("frontier_markers", 1000);
+
+        occupancy_sub_ = nh_.subscribe("/local/octomap_full", 10, &Frontier3DExtractionManager::octomapCallback, this);
     }
 
     void Frontier3DExtractionManager::initParams(){
-        min_frontier_points_ = 10;
+        min_frontier_points_ = 5;
 
         frontier_points_ = {};
         frontier_clusters_ = {};
     }
     
+    void Frontier3DExtractionManager::octomapCallback(const octomap_msgs::Octomap::ConstPtr& msg){
+        octomap_msg_ = msg;
+
+        if(octomap_msg_ != nullptr){
+            octree_ = dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(*octomap_msg_));
+        }
+    }
+
     bool Frontier3DExtractionManager::getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
              frontier_extraction::GetFrontiers::Response &res)
     {
-        auto t1 = high_resolution_clock::now();
-        octomap_msg_  = ros::topic::waitForMessage<octomap_msgs::Octomap>("/front/octomap_full",ros::Duration(5.0));
-
-        if(octomap_msg_ == nullptr)
+        if(octree_ == nullptr)
             return false;
-   
-        octree_ = dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(*octomap_msg_));
 
-        // Extract Frontiers
-        auto t2 = high_resolution_clock::now();
+        // auto t1 = high_resolution_clock::now();
+        pelvis_pos_map_.x() = req.robot_pose.x;
+        pelvis_pos_map_.y() = req.robot_pose.y;
+        pelvis_pos_map_.z() = req.robot_pose.z;
+
         extractFrontiers();        
-        auto t3 = high_resolution_clock::now();
+        // auto t2 = high_resolution_clock::now();
 
         // ROS_INFO("Frontier Points added: %ld", frontier_points_.size());
         
         // Publish frontiers and set service response
         printMarkers();
-        auto t4 = high_resolution_clock::now();
+        // auto t3 = high_resolution_clock::now();
 
         marker_pub_.publish(marker_array_);
         
-        duration<double, std::milli> ms_double = t2 - t1;
-        ROS_INFO("TIME WAIT MSG: %f", ms_double.count());
-        ms_double = t3 - t2;
-        ROS_INFO("Extract Frontiers: %f", ms_double.count());
-        ms_double = t4 - t3;
-        ROS_INFO("Markers: %f", ms_double.count());
+        // duration<double, std::milli> ms_double = t2 - t1;
+        // ROS_INFO("Extract Frontiers: %f", ms_double.count());
+        // ms_double = t3 - t2;
+        // ROS_INFO("Markers: %f", ms_double.count());
 
         setFrontierResponse(res);
 
@@ -98,19 +104,40 @@ namespace frontier_extraction{
 
     bool Frontier3DExtractionManager::isFrontierXY(const point3d &p){
         //if there are unknown around the cube, the cube is frontier
-        for (int i = -1; i <= 1; i++){
-            for (int j = -1; j <= 1; j++){
-                if(i == 0 && j == 0)
-                    continue;
+        num_occupied_ = 0;
+        //Check on the same plane
+         for(int f_x = -1; f_x <= 1; f_x++){
+             for(int f_y = -1; f_y <= 1; f_y++){
+                 if(f_x == 0 && f_y == 0)
+                     continue;
 
-                n_cur_frontier_ = octree_->search(point3d(p.x() + i*octree_->getResolution(),
-                                                          p.y() + j*octree_->getResolution(),
-                                                          p.z()));
+                 n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
+                                                           p.y() + f_y*octree_->getResolution(),
+                                                           p.z()));
                 
-                if(n_cur_frontier_ == nullptr)
-                    return true;      
-            }
-        }
+                 if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_)){
+                     num_occupied_ ++;
+                     if(num_occupied_ > 6)
+                         return false;
+                 }
+             }
+         }
+
+        //TODO: IMPROVE
+        //Check on up and down (2*resolution to be more robust)        
+        n_cur_frontier_ = octree_->search(point3d(p.x(),
+                                                  p.y(),
+                                                  p.z() - 1.0*octree_->getResolution()));
+        
+        if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_)){
+            n_cur_frontier_ = octree_->search(point3d(p.x(),
+                                                      p.y(),
+                                                      p.z() + 1.0*octree_->getResolution()));
+
+            if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_))
+                return true;
+        }        
+        
         return false;
     }
 
@@ -124,7 +151,7 @@ namespace frontier_extraction{
             // unsigned long int num_free = 0; //number of free cube around frontier, for filtering out fake frontier
 
             if(octree_->isNodeOccupied(*n) && isFrontierXY(n.getCoordinate()))
-                    frontier_points_.push_back({point3d(n.getX(), n.getY(), n.getZ()), 0});
+                frontier_points_.push_back({point3d(n.getX(), n.getY(), n.getZ()), 0});
         }
 
         ROS_WARN("Cluster Frontier Points");
@@ -144,12 +171,18 @@ namespace frontier_extraction{
 
         for(int i = 1; i < frontier_points_.size(); i++){                 
             for(int j = 0; j < i; j++){       
+
+                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= octree_->getResolution())
+                    continue;
                 
                 distance_ = pow(frontier_points_[i].first.x() - frontier_points_[j].first.x(), 2) + 
                             pow(frontier_points_[i].first.y() - frontier_points_[j].first.y(), 2);
-                             
-                if(distance_ <= max_distance_){
-                    if(frontier_points_[i].second == 0){
+                            
+                if((frontier_points_[i].first.x() - pelvis_pos_map_.x())*(frontier_points_[j].first.x() - pelvis_pos_map_.x()) > 0.0 &&
+                    distance_ <= max_distance_)
+                {
+                    if(frontier_points_[i].second == 0)
+                    {
                         frontier_points_[i].second = frontier_points_[j].second;
                         frontier_clusters_[frontier_points_[i].second].first.x() += frontier_points_[i].first.x();
                         frontier_clusters_[frontier_points_[i].second].first.y() += frontier_points_[i].first.y();
@@ -176,7 +209,7 @@ namespace frontier_extraction{
                                 frontier_points_[k].second = frontier_points_[i].second;
                             }                        
                         }
-                    }                         
+                    }   
                 }
             }
 
@@ -219,6 +252,10 @@ namespace frontier_extraction{
            
         //Publish frontier points --> Markers
         for(int i = 0; i < frontier_points_.size(); i++){
+
+            // if(frontier_clusters_[frontier_points_[i].second].second < min_frontier_points_)
+            //     continue;
+
             visualization_msgs::Marker marker;
 
             marker.header.frame_id = "map";
@@ -228,14 +265,21 @@ namespace frontier_extraction{
             marker.scale.x = marker.scale.y = marker.scale.z = octomap_msg_->resolution;
 
             marker.color.a = 1.0;
-            marker.color.r = 1.0*static_cast<float>(frontier_points_[i].second)/
-                                 static_cast<float>(frontier_clusters_.size());
-            marker.color.b = 1.0 - marker.color.r;
-            marker.color.g = 1.0 - 0.5*marker.color.r;
+            if(frontier_clusters_[frontier_points_[i].second].second >= min_frontier_points_){
+                marker.color.r = 1.0*static_cast<float>(frontier_points_[i].second)/
+                                    static_cast<float>(frontier_clusters_.size());
+                marker.color.b = 1.0 - marker.color.r;
+                marker.color.g = 1.0 - 0.5*marker.color.r;
+            }
+            else{
+                marker.color.r = 1.0;
+                marker.color.b = 1.0;
+                marker.color.g = 1.0;                
+            }
             
             marker.pose.position.x = frontier_points_[i].first.x();
             marker.pose.position.y = frontier_points_[i].first.y();
-            marker.pose.position.z = frontier_points_[i].first.z();
+            marker.pose.position.z = frontier_points_[i].first.z() + 0.025;
 
             marker.pose.orientation.w = 1.0f;
             marker.id = (id++);
@@ -260,7 +304,7 @@ namespace frontier_extraction{
             if(frontier_clusters_[i].second >= min_frontier_points_){
                 marker.pose.position.x = frontier_clusters_[i].first.x();
                 marker.pose.position.y = frontier_clusters_[i].first.y();
-                marker.pose.position.z = frontier_clusters_[i].first.z();
+                marker.pose.position.z = frontier_clusters_[i].first.z() + 0.025;
 
                 marker_array_.markers.push_back(marker);
             }

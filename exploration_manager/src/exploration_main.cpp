@@ -4,7 +4,7 @@
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
 #include <behaviortree_cpp_v3/loggers/bt_file_logger.h>
 
-#include <exploration_manager/GetExplorationRequest.h>
+#include <exploration_manager/CheckExplorationRequest.h>
 #include <exploration_manager/CollectObjectPose.h>
 #include <exploration_manager/CollectFrontiers.h>
 #include <exploration_manager/Explore.h>
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     
     factory.registerSimpleCondition("IsExplorationRequired", std::bind(IsExplorationRequired));
    
-    factory.registerNodeType<GetExplorationRequest>("GetExplorationRequest");
+    factory.registerNodeType<CheckExplorationRequest>("CheckExplorationRequest");
     factory.registerNodeType<CollectObjectPose>("CollectObjectPose");
     factory.registerNodeType<CollectFrontiers>("CollectFrontiers");
     factory.registerNodeType<Explore>("Explore");
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     PublisherZMQ publisher_zmq(tree);
     BT::FileLogger logger_file(tree, "bt_exploration.fbl");
 
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(25);
     while(ros::ok()){
         tree.tickRoot();
                 

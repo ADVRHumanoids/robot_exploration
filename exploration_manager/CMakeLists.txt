@@ -46,9 +46,9 @@ include_directories(
 )
 
 #ACTIONS
-add_library(GetExplorationRequest src/GetExplorationRequest.cpp)
-add_dependencies(GetExplorationRequest  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(GetExplorationRequest ${catkin_LIBRARIES})
+add_library(CheckExplorationRequest src/CheckExplorationRequest.cpp)
+add_dependencies(CheckExplorationRequest  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(CheckExplorationRequest ${catkin_LIBRARIES})
 
 add_library(CollectObjectPose src/CollectObjectPose.cpp)
 add_dependencies(CollectObjectPose  ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -78,7 +78,7 @@ target_link_libraries(CheckLocomotionStatus ${catkin_LIBRARIES})
 
 
 add_executable(exploration_main src/exploration_main.cpp)
-target_link_libraries(exploration_main ${catkin_LIBRARIES} ${behaviortree_cpp_v3_LIBRARIES}  GetExplorationRequest CollectFrontiers Explore SendNavPose
+target_link_libraries(exploration_main ${catkin_LIBRARIES} ${behaviortree_cpp_v3_LIBRARIES}  CheckExplorationRequest CollectFrontiers Explore SendNavPose
                                                                                              IsExplorationRequired CollectObjectPose CheckLocomotionStatus)
 
 
