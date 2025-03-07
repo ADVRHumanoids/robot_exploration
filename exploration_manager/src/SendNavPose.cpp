@@ -18,9 +18,6 @@ BT::NodeStatus SendNavPose::tick(){
         return BT::NodeStatus::SUCCESS;
     }
 
-    bt_data_->locomotion_target.position.x = 4.0;
-    bt_data_->locomotion_target.position.y = -3.0;
-
     candidate_nav_target_.request.target_pose.pose = bt_data_->locomotion_target;
     // bt_data_->force_frontier_update = true; //Force frontiers updates evertime you change nav target
 
