@@ -127,7 +127,7 @@ namespace frontier_extraction{
         //Check on up and down (2*resolution to be more robust)        
         n_cur_frontier_ = octree_->search(point3d(p.x(),
                                                   p.y(),
-                                                  p.z() - 1.0*octree_->getResolution()));
+                                                  p.z() - 2.0*octree_->getResolution()));
         
         if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_)){
             n_cur_frontier_ = octree_->search(point3d(p.x(),
@@ -157,7 +157,7 @@ namespace frontier_extraction{
         ROS_WARN("Cluster Frontier Points");
         //Cluster frontier points
         int id = 1;
-        double max_distance_ = pow(2.0*octree_->getResolution(), 2);
+        double max_distance_ = pow(2.5*octree_->getResolution(), 2);
         
         if(frontier_points_.size() > 0){
             frontier_points_[0].second = 1;
@@ -172,7 +172,7 @@ namespace frontier_extraction{
         for(int i = 1; i < frontier_points_.size(); i++){                 
             for(int j = 0; j < i; j++){       
 
-                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= octree_->getResolution())
+                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= 1.5*octree_->getResolution())
                     continue;
                 
                 distance_ = pow(frontier_points_[i].first.x() - frontier_points_[j].first.x(), 2) + 
@@ -191,21 +191,23 @@ namespace frontier_extraction{
                         frontier_clusters_[frontier_points_[i].second].second ++;
                     }
                     else if(frontier_points_[i].second != frontier_points_[j].second){
+                        int temp_cluster_id = frontier_points_[j].second;
                         for(int k = 0; k < i; k++){
-                            if(frontier_points_[k].second == frontier_points_[j].second){
-                                if(frontier_clusters_[frontier_points_[j].second].second > 0){
-                                    frontier_clusters_[frontier_points_[i].second].first.x() += frontier_clusters_[frontier_points_[j].second].first.x();
-                                    frontier_clusters_[frontier_points_[i].second].first.y() += frontier_clusters_[frontier_points_[j].second].first.y();
-                                    frontier_clusters_[frontier_points_[i].second].first.z() += frontier_clusters_[frontier_points_[j].second].first.z();
-                                    frontier_clusters_[frontier_points_[i].second].second += frontier_clusters_[frontier_points_[j].second].second;
+                            if(frontier_points_[k].second == temp_cluster_id){
+                                //Update centroid - num points once
+                                if(frontier_clusters_[frontier_points_[k].second].second > 0){
+                                    frontier_clusters_[frontier_points_[i].second].first.x() += frontier_clusters_[frontier_points_[k].second].first.x();
+                                    frontier_clusters_[frontier_points_[i].second].first.y() += frontier_clusters_[frontier_points_[k].second].first.y();
+                                    frontier_clusters_[frontier_points_[i].second].first.z() += frontier_clusters_[frontier_points_[k].second].first.z();
+                                    frontier_clusters_[frontier_points_[i].second].second += frontier_clusters_[frontier_points_[k].second].second;
                                     
-                                    frontier_clusters_[frontier_points_[j].second].first.x() = 0;
-                                    frontier_clusters_[frontier_points_[j].second].first.y() = 0;
-                                    frontier_clusters_[frontier_points_[j].second].first.z() = 0;
+                                    frontier_clusters_[frontier_points_[k].second].first.x() = 0;
+                                    frontier_clusters_[frontier_points_[k].second].first.y() = 0;
+                                    frontier_clusters_[frontier_points_[k].second].first.z() = 0;
 
-                                    frontier_clusters_[frontier_points_[j].second].second = 0;
+                                    frontier_clusters_[frontier_points_[k].second].second = 0;
                                 }
-
+                                //Update all cluster id
                                 frontier_points_[k].second = frontier_points_[i].second;
                             }                        
                         }

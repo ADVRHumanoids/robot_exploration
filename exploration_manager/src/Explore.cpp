@@ -65,15 +65,20 @@ BT::NodeStatus Explore::tick(){
         squared_euclidean_distance_ = (pow(bt_data_->frontiers[i].centroid.x - bt_data_->last_robot_pose.getOrigin().x(), 2) + 
                                        pow(bt_data_->frontiers[i].centroid.y - bt_data_->last_robot_pose.getOrigin().y(), 2));
 
+        //TODO get from param
+        //Avoid sending targets close to the robot (within nav tolerance), otherwise: stuck!
+        if(squared_euclidean_distance_ < 0.16f)
+            continue;
+
+
         //Distance to prev nav target(frontier)
-        squared_distance_to_prev_target_ = (pow(bt_data_->frontiers[i].centroid.x -  bt_data_->locomotion_target.position.x, 2) + 
+        squared_distance_to_prev_target_ = (pow(bt_data_->frontiers[i].centroid.x - bt_data_->locomotion_target.position.x, 2) + 
                                             pow(bt_data_->frontiers[i].centroid.y - bt_data_->locomotion_target.position.y, 2));
         
         //TODO: Use fastatan
         temp_ang_ = atan2(bt_data_->frontiers[i].centroid.y - bt_data_->last_robot_pose.getOrigin().y(),
                           bt_data_->frontiers[i].centroid.x - bt_data_->last_robot_pose.getOrigin().x());
         
-
         temp_ang_diff_ = fabs(robot_yaw_ - temp_ang_);
         //Transform in 0-180° difference
         if(temp_ang_diff_ > 6.28f)
@@ -81,6 +86,7 @@ BT::NodeStatus Explore::tick(){
 
         if(temp_ang_diff_ > 3.14f)
             temp_ang_diff_ = 6.28f - temp_ang_diff_; 
+        
 
         //Frontier size - Distance to robot - Distance to prev nav target - frontiers close
         cost_ = cost_n_points_ * 1.0f/(static_cast<float>(1 + bt_data_->frontiers[i].number_of_points)) + 

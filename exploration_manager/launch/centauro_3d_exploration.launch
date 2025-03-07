@@ -28,7 +28,7 @@
         <arg name="frontiers_2d" value="$(arg frontiers_2d)"/>
     </include>
 
-    <rosparam command="load" file="$(find exploration_manager)/config/exploration_config.yaml"/>
+    <rosparam command="load" file="$(find exploration_manager)/config/exploration_config_centauro.yaml"/>
 
     <!-- Exploration BT -->
     <arg name="BT_file" default="$(find exploration_manager)/config/exploration_bt.xml"/>
