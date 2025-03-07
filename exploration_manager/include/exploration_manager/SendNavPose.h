@@ -8,6 +8,7 @@
 #include <exploration_manager/SharedClass.h>
 
 #include <geometry_msgs/PoseStamped.h>
+#include <centauro_ros_nav/SendCandidateNavTarget.h>
 
 using namespace BT;
 
@@ -23,9 +24,11 @@ class SendNavPose : public BT::AsyncActionNode
   private:
     ros::NodeHandle nh_;
 
-    ros::Publisher send_nav_target_;
+    ros::ServiceClient send_candidate_nav_target_;
+    // ros::Publisher send_nav_target_;
 
-    geometry_msgs::PoseStamped nav_target_;
+    // geometry_msgs::PoseStamped nav_target_;    
+    centauro_ros_nav::SendCandidateNavTarget candidate_nav_target_;
     
 };
 

@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   frontier_extraction
   message_generation
   actionlib_msgs
+  centauro_ros_nav
 )
 
 #find_package(BehaviorTreeV3 REQUIRED)
@@ -33,7 +34,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES beginner_tutorials
-  CATKIN_DEPENDS roscpp rospy std_msgs std_srvs behaviortree_cpp_v3 frontier_extraction  actionlib_msgs message_generation
+  CATKIN_DEPENDS roscpp rospy std_msgs std_srvs behaviortree_cpp_v3 frontier_extraction  actionlib_msgs message_generation centauro_ros_nav
 #  DEPENDS system_lib
 )
 
