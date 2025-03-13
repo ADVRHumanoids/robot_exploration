@@ -1,4 +1,5 @@
-# robot_exploration
+# This readme is for ROS1 --> TO BE UPDATED FOR ROS2
+# robot_exploration 
 Set of packages for robot exploration on occupancy map.
 
 - 2D Occupancy map with octomap from pointcloud (LiDAR, RGB-D,...)
