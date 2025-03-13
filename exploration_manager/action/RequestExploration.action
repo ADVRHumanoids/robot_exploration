@@ -1,8 +1,0 @@
-# Define the goal
-string object_name  #Name of the object to 
----
-# Define the result
-bool found
----
-# Define a feedback message
-bool finished

@@ -1,49 +1,71 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8)
 project(gazebo_odom)
 
-add_compile_options(-std=c++14)
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
+
+#include_directories(
+#  include
+#)
+
+set(dependencies
+  rclcpp
+  rclcpp_lifecycle
   std_msgs
-  nav_msgs
-  tf
-  tf_conversions
-  eigen_conversions
   geometry_msgs
-  gazebo_msgs
+  nav_msgs
+  tf2
+  tf2_ros
+  tf2_eigen
 )
 
-
-catkin_package(
-# INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs std_msgs tf tf_conversions gazebo_msgs
-)
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-  include_directories()
-  ${catkin_INCLUDE_DIRS}
-  )
 
 add_executable(sim_odom_connect src/sim_odom_connect.cpp)
-add_dependencies(sim_odom_connect ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(sim_odom_connect ${catkin_LIBRARIES})
+target_link_libraries(sim_odom_connect)
+ament_target_dependencies(sim_odom_connect ${dependencies})
 
+install(TARGETS
+  sim_odom_connect
+  DESTINATION lib/${PROJECT_NAME})
 
-install(TARGETS sim_odom_connect
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#install(
+#  DIRECTORY include/
+#  DESTINATION include/
+#)
+
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
-## Mark cpp header files for installation
-#install(DIRECTORY include/
-#  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
-#  PATTERN ".svn" EXCLUDE
-#)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # comment the line when a copyright and license is added to all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # comment the line when this package is in a git repo and when
+  # a copyright and license is added to all source files
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()

@@ -1,60 +1,56 @@
-#include <ros/ros.h>
-#include <iostream>
-#include <fstream>
+#include <memory>
 
-#include "Eigen/Core"
-#include "Eigen/Geometry"
-#include "tf_conversions/tf_eigen.h"
-#include <eigen_conversions/eigen_msg.h>
-#include <gazebo_msgs/GetModelState.h>
+#include "rclcpp/rclcpp.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
-#include <tf/transform_broadcaster.h>
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "tf2_ros/static_transform_broadcaster.h"
 
-int main(int argc, char** argv)
-{    
-    ros::init(argc, argv, "simOdomGazebo");
-    ros::NodeHandle nh;
+class SimOdomGazebo : public rclcpp::Node
+{
+public:
+  SimOdomGazebo()
+  : Node("sim_gz_odom_connect")
+  {
+    //Define callback for subscription
+    auto odom_callback =
+      [this](nav_msgs::msg::Odometry::SharedPtr msg) -> void {        
+        // Publish Transform "odom" -> "pelvis"
+
+        t_.header.stamp = msg->header.stamp;
+        t_.header.frame_id = "odom";
+        t_.child_frame_id = "pelvis";
+
+        t_.transform.translation.x = msg->pose.pose.position.x;
+        t_.transform.translation.y = msg->pose.pose.position.y;
+        t_.transform.translation.z = msg->pose.pose.position.z;
+
+        t_.transform.rotation.x = msg->pose.pose.orientation.x;
+        t_.transform.rotation.y = msg->pose.pose.orientation.y;
+        t_.transform.rotation.z = msg->pose.pose.orientation.z;
+        t_.transform.rotation.w = msg->pose.pose.orientation.w;
+
+        tf_static_broadcaster_->sendTransform(t_);
+      };
     
-    Eigen::Affine3d temp = Eigen::Affine3d::Identity();
-    
-    tf::TransformBroadcaster br;
-    tf::StampedTransform tr;
-    tf::Transform transform;
-    
-    ros::ServiceClient get_model_client = nh.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+    // Subscriber
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/centauro/odom", 10, odom_callback);
 
-    std::string model_name, world_frame, base_frame;
+    // TF broadcaster
+    tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+  }
 
-    ros::param::get("sim_odom_connect/model_name", model_name);
-    ros::param::get("sim_odom_connect/world_frame", world_frame);
-    ros::param::get("sim_odom_connect/base_frame", base_frame);
+private:
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
 
-    gazebo_msgs::GetModelState get_model_state_msg;
-    get_model_state_msg.request.model_name = model_name;
+geometry_msgs::msg::TransformStamped t_;
+};
 
-    ros::Time now;
-    ros::Rate loop_rate(200);
-
-    while(ros::ok()){
-                
-        get_model_client.call(get_model_state_msg);
-
-        transform.setOrigin(tf::Vector3(
-                              get_model_state_msg.response.pose.position.x,
-                              get_model_state_msg.response.pose.position.y,
-                              get_model_state_msg.response.pose.position.z- 0.90f));
-
-        transform.setRotation(tf::Quaternion(
-                                  get_model_state_msg.response.pose.orientation.x,
-                                  get_model_state_msg.response.pose.orientation.y,
-                                  get_model_state_msg.response.pose.orientation.z,
-                                  get_model_state_msg.response.pose.orientation.w));
-
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, base_frame));
-        
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
-    
-    return 0;
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<SimOdomGazebo>());
+  rclcpp::shutdown();
+  return 0;
 }
