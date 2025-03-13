@@ -1,15 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(frontier_extraction)
 
-# Default to C++17
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
+find_package(octomap REQUIRED)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -38,6 +33,7 @@ set(dependencies
   frontier_extraction_msgs
 )
 
+# frontier 2D
 add_library(frontier_2d_extraction_manager SHARED
   src/frontier_2d_extraction_manager.cpp
 )
@@ -56,8 +52,28 @@ add_executable(frontier_2d_extraction_node src/frontier_2d_extraction_node.cpp)
 target_link_libraries(frontier_2d_extraction_node frontier_2d_extraction_manager)
 ament_target_dependencies(frontier_2d_extraction_node ${dependencies})
 
+# frontier 3D
+add_library(frontier_3d_extraction_manager SHARED
+  src/frontier_3d_extraction_manager.cpp
+)
+
+ament_target_dependencies(frontier_3d_extraction_manager
+  ${dependencies}
+)
+
+install(TARGETS frontier_3d_extraction_manager
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(frontier_3d_extraction_node src/frontier_3d_extraction_node.cpp)
+target_link_libraries(frontier_3d_extraction_node frontier_3d_extraction_manager octomap)
+ament_target_dependencies(frontier_3d_extraction_node ${dependencies})
+
 install(TARGETS
   frontier_2d_extraction_node
+  frontier_3d_extraction_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(

@@ -20,10 +20,10 @@ def generate_launch_description():
     robot_description_gz = check_output(f'xacro {xacro_urdf_gz}', shell=True).decode()
 
     xacro_urdf  =  os.path.join(centauro_urdf_dir, 'urdf', 'centauro.urdf.xacro')
-    robot_description = check_output(f'xacro {xacro_urdf} velodyne:=true realsense:=false gz_odometry:=true', shell=True).decode()
+    robot_description = check_output(f'xacro {xacro_urdf} velodyne:=true realsense:=true gz_odometry:=true', shell=True).decode()
 
     xacro_srdf  =  os.path.join(centauro_srdf_dir, 'srdf', 'centauro.srdf.xacro')
-    robot_description_semantic = check_output(f'xacro {xacro_srdf} velodyne:=true realsense:=false gz_odometry:=true', shell=True).decode()
+    robot_description_semantic = check_output(f'xacro {xacro_srdf} velodyne:=true realsense:=true gz_odometry:=true', shell=True).decode()
 
     gz_odometry = LaunchConfiguration('gz_odometry')
 
@@ -107,6 +107,10 @@ def generate_launch_description():
             arguments=[
                 #'/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
                 '/lidar/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+                '/D435i_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+                '/D435i_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image',
+                '/D435i_camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
+                '/D435i_camera/image@sensor_msgs/msg/Image[gz.msgs.Image',
                 '/centauro/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
                 '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock'
             ],
