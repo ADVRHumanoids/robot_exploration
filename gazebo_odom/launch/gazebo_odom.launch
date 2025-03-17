@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="model_name" default="centauro"/>  <!-- kyon -->
+    <arg name="model_name" default="centauro"/>
     <arg name="world_frame" default="map"/>
     <arg name="base_frame" default="pelvis"/>
 
