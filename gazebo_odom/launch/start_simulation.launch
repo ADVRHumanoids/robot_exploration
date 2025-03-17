@@ -16,9 +16,6 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="ci_world_connecter"
             args="0 0 0 0 0 0 1 odom ci/world" />
 
-    <node pkg="tf2_ros" type="static_transform_publisher" name="map_T_odom"
-            args="0 0 0 0 0 0 1 odom map" />
-
     <include file="$(find gazebo_odom)/launch/gazebo_odom.launch"/>
 
 </launch>

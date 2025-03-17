@@ -35,22 +35,35 @@ int main(int argc, char** argv)
     ros::Time now;
     ros::Rate loop_rate(200);
 
+    std_msgs::Header prev_heder;
+
+
     while(ros::ok()){
                 
         get_model_client.call(get_model_state_msg);
 
-        transform.setOrigin(tf::Vector3(
-                              get_model_state_msg.response.pose.position.x,
-                              get_model_state_msg.response.pose.position.y,
-                              get_model_state_msg.response.pose.position.z- 0.90f));
+        if(get_model_state_msg.response.header.stamp.nsec != prev_heder.stamp.nsec ||
+           get_model_state_msg.response.header.stamp.sec != prev_heder.stamp.sec){
 
-        transform.setRotation(tf::Quaternion(
-                                  get_model_state_msg.response.pose.orientation.x,
-                                  get_model_state_msg.response.pose.orientation.y,
-                                  get_model_state_msg.response.pose.orientation.z,
-                                  get_model_state_msg.response.pose.orientation.w));
+            transform.setOrigin(tf::Vector3(
+                                get_model_state_msg.response.pose.position.x,
+                                get_model_state_msg.response.pose.position.y,
+                                get_model_state_msg.response.pose.position.z- 0.90f));
 
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, base_frame));
+            transform.setRotation(tf::Quaternion(
+                                    get_model_state_msg.response.pose.orientation.x,
+                                    get_model_state_msg.response.pose.orientation.y,
+                                    get_model_state_msg.response.pose.orientation.z,
+                                    get_model_state_msg.response.pose.orientation.w));
+
+            br.sendTransform(tf::StampedTransform(transform, 
+                                                ros::Time(get_model_state_msg.response.header.stamp.sec, 
+                                                            get_model_state_msg.response.header.stamp.nsec),
+                                                world_frame,
+                                                base_frame));
+        }
+
+        prev_heder = get_model_state_msg.response.header;
         
         ros::spinOnce();
         loop_rate.sleep();
