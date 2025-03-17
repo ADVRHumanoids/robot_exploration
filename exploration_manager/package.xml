@@ -57,12 +57,14 @@
   <build_depend>behaviortree_cpp_v3</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>actionlib_msgs</build_depend>
+  <build_depend>centauro_ros_nav</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>std_srvs</build_export_depend>
   <build_export_depend>frontier_extraction</build_export_depend>
   <build_export_depend>message_generation</build_export_depend>
+  <build_export_depend>centauro_ros_nav</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
@@ -71,6 +73,7 @@
   <exec_depend>behaviortree_cpp_v3</exec_depend>
   <exec_depend>message_generation</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
+  <exec_depend>centauro_ros_nav</exec_depend>
 
 
 

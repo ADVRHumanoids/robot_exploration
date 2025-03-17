@@ -8,7 +8,8 @@
 #include <tf/transform_listener.h>
 #include "tf_conversions/tf_eigen.h"
 
-#include <nav_msgs/OccupancyGrid.h>
+#include <octomap_msgs/Octomap.h>
+#include <octomap_msgs/conversions.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <frontier_extraction/Frontier.h>
@@ -18,12 +19,13 @@
 namespace frontier_extraction{
 
     using namespace Eigen;
+    typedef octomap::point3d point3d;
     
-    class FrontierExtractionManager {
+    class Frontier3DExtractionManager {
 
     public:  
-        FrontierExtractionManager( std::string ns = "", double rate = 50.0 );
-        ~FrontierExtractionManager();
+        Frontier3DExtractionManager( std::string ns = "", double rate = 2.5 );
+        ~Frontier3DExtractionManager();
         
         void main_loop(const ros::TimerEvent& timer);
         
@@ -40,53 +42,46 @@ namespace frontier_extraction{
 
         ros::ServiceServer get_frontiers_srv_;
         ros::Publisher marker_pub_;
+        ros::Subscriber occupancy_sub_;
 
-        Affine3d pelvis_T_map_;
+        point3d pelvis_pos_map_;
 
-        nav_msgs::OccupancyGrid::ConstPtr grid_;
+        octomap_msgs::Octomap::ConstPtr octomap_msg_;
+        octomap::OcTree *octree_;
 
         visualization_msgs::MarkerArray marker_array_;
 
-        int width_, height_;
-        float resolution_;
-
         //0: map_open, 1 map_close, 2: frontier open
-        std::set<int> frontier_points_;
-        std::vector<int> frontier_clustersing_; //list of indices defining the number of the cluster in which the point of the set at the same distance belongs
-        
-        std::vector<int> frontiers_dim_; //Size of cluster number i
-        std::vector<std::array<float, 2>> centroids_;
+        std::vector<std::pair<point3d, int>> frontier_points_;  //point, cluster ID
+        std::vector<std::pair<point3d, int>> frontier_clusters_; //centroid, n° points
+       
 
-        std::set<int> visited_;
-        std::set<int> to_visit_;
+        octomap::OcTreeNode *n_cur_frontier_;
+        bool frontier_true_;         // whether or not a frontier point
+        bool belong_old_;            //whether or not belong to old group
+        double distance_;
+        int num_occupied_;
 
-        int temp_pos_, temp_pos2_;
-
-        int max_cluster_, min_frontier_points_;
-
-        int i,j;
+        int min_frontier_points_;
 
         // ----- Private Methods ----
         void initROSNode(double rate);
             
         void initParams();
 
-        const bool isValidCell(const int idx);
-        const bool isFrontier(const int idx1, const int idx2);
-
         void extractFrontiers();
 
         void clearMarkers();
         void printMarkers();
-        
-        void innerExtractFrontiers(const int idx);
 
+        bool isFrontierXY(const point3d &p);
+
+        void octomapCallback(const octomap_msgs::Octomap::ConstPtr& msg);
+        
         bool getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
                              frontier_extraction::GetFrontiers::Response &res);
 
         void setFrontierResponse(frontier_extraction::GetFrontiers::Response &res);
-
-        void frontierClustering();
     };
 }
 #endif

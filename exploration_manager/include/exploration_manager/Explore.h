@@ -27,10 +27,14 @@ class Explore : public BT::AsyncActionNode
     ros::NodeHandle nh_;
     tf::TransformListener listener_;
     
-    float cost_, cost_max_, squared_euclidean_distance_, squared_distance_to_prev_target_;
+    float cost_, cost_min_, squared_euclidean_distance_, squared_distance_to_prev_target_;
     int max_frontier_idx_;
-    float min_dist_frontier_robot_;
+    float min_dist_frontier_robot_, temp_distance_;
     float cost_n_points_, cost_euclidean_distance_, cost_distance_prev_target_;
+    float cost_neighbors_, cost_rotation_distance_;
+    float robot_yaw_, temp_ang_diff_, temp_ang_, angle_;
+
+    std::vector<uint8_t> close_frontiers_;
     
 };
 

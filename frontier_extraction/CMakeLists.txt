@@ -4,6 +4,8 @@ project(frontier_extraction)
 ## Compile as C++11, supported in ROS Kinetic and newer
  add_compile_options(-std=c++14)
 
+ find_package(octomap REQUIRED)
+ 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -16,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   eigen_conversions
   message_generation
+  octomap_msgs
 )
 
 ## Generate messages in the 'msg' folder
@@ -48,7 +51,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES perception_thesis_gap
-  CATKIN_DEPENDS roscpp geometry_msgs std_msgs nav_msgs tf tf_conversions message_generation message_runtime
+  CATKIN_DEPENDS roscpp geometry_msgs std_msgs nav_msgs tf tf_conversions message_generation message_runtime octomap_msgs
 #  DEPENDS system_lib
 )
 
@@ -62,15 +65,24 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${YAML_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
   #${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
-add_library(FrontierExtractionManager src/FrontierExtractionManager.cpp)
-add_dependencies(FrontierExtractionManager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(FrontierExtractionManager ${catkin_LIBRARIES})
+add_library(Frontier2DExtractionManager src/Frontier2DExtractionManager.cpp)
+add_dependencies(Frontier2DExtractionManager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(Frontier2DExtractionManager ${catkin_LIBRARIES})
 
-add_executable(FrontierExtractionNode src/FrontierExtractionNode.cpp)
-target_link_libraries(FrontierExtractionNode ${catkin_LIBRARIES} FrontierExtractionManager)
+add_executable(Frontier2DExtractionNode src/Frontier2DExtractionNode.cpp)
+target_link_libraries(Frontier2DExtractionNode ${catkin_LIBRARIES} Frontier2DExtractionManager)
+
+
+add_library(Frontier3DExtractionManager src/Frontier3DExtractionManager.cpp)
+add_dependencies(Frontier3DExtractionManager ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(Frontier3DExtractionManager ${catkin_LIBRARIES} ${OCTOMAP_LIBRARIES})
+
+add_executable(Frontier3DExtractionNode src/Frontier3DExtractionNode.cpp)
+target_link_libraries(Frontier3DExtractionNode ${catkin_LIBRARIES} Frontier3DExtractionManager)
 
 
 ## Mark cpp header files for installation

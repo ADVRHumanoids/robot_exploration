@@ -26,11 +26,14 @@ class CheckLocomotionStatus : public BT::AsyncActionNode
     
   private:
     ros::NodeHandle nh_;
+    ros::Subscriber nav_status_sub_;
     
     tf::TransformListener listener_;
     actionlib_msgs::GoalStatusArrayConstPtr msg_; 
 
-    float min_nav_target_distance_;
+    float min_nav_target_distance_, min_frontier_distance_;
+
+    void getNavStatus(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
 };
 
 #endif

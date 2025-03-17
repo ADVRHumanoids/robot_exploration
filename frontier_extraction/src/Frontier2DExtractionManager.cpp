@@ -1,4 +1,4 @@
-#include <frontier_extraction/FrontierExtractionManager.h>
+#include <frontier_extraction/Frontier2DExtractionManager.h>
 #include <chrono>
 
 namespace frontier_extraction{
@@ -8,7 +8,7 @@ namespace frontier_extraction{
     using std::chrono::duration;
     using std::chrono::milliseconds;
 
-    FrontierExtractionManager::FrontierExtractionManager ( std::string ns, double rate )
+    Frontier2DExtractionManager::Frontier2DExtractionManager ( std::string ns, double rate )
     //   : _nh ( ns ),
     {
         //initialization ROS node
@@ -23,23 +23,23 @@ namespace frontier_extraction{
         ROS_INFO_STREAM ("Initialization done.");
     }
 
-    void FrontierExtractionManager::initROSNode(double rate)
+    void Frontier2DExtractionManager::initROSNode(double rate)
     {
         // init ROS node
         rate_ = rate;
         period_ = 1.0 / rate_;
-        timer_ = nh_.createTimer(ros::Duration(period_), &FrontierExtractionManager::main_loop, this, false, false);
+        timer_ = nh_.createTimer(ros::Duration(period_), &Frontier2DExtractionManager::main_loop, this, false, false);
         time_ = 0.0;
 
-        get_frontiers_srv_ = nh_.advertiseService("get_frontiers", &FrontierExtractionManager::getFrontiersSrv, this);
+        get_frontiers_srv_ = nh_.advertiseService("get_frontiers", &Frontier2DExtractionManager::getFrontiersSrv, this);
         marker_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("frontier_markers", 1000);
     }
 
-    void FrontierExtractionManager::initParams(){
+    void Frontier2DExtractionManager::initParams(){
         min_frontier_points_ = 10;
     }
     
-    bool FrontierExtractionManager::getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
+    bool Frontier2DExtractionManager::getFrontiersSrv(frontier_extraction::GetFrontiers::Request  &req,
              frontier_extraction::GetFrontiers::Response &res)
     {
         // Collect occupancy map
@@ -72,7 +72,7 @@ namespace frontier_extraction{
         return true;
     }
 
-    void FrontierExtractionManager::setFrontierResponse(frontier_extraction::GetFrontiers::Response &res)
+    void Frontier2DExtractionManager::setFrontierResponse(frontier_extraction::GetFrontiers::Response &res)
     {
         // Fill response message with frontiers bigger than X pixels
         for(int i = 0; i < frontiers_dim_.size(); i++){
@@ -89,14 +89,14 @@ namespace frontier_extraction{
         }
     }
 
-    const bool FrontierExtractionManager::isValidCell(const int idx){ return (idx >= 0 && idx < width_*height_);}
+    const bool Frontier2DExtractionManager::isValidCell(const int idx){ return (idx >= 0 && idx < width_*height_);}
    
-    const bool FrontierExtractionManager::isFrontier(const int idx1, const int idx2){ 
+    const bool Frontier2DExtractionManager::isFrontier(const int idx1, const int idx2){ 
          return ((grid_->data[idx1] == -1 && grid_->data[idx2] == 0) ||
                  (grid_->data[idx2] == -1 && grid_->data[idx1] == 0));
     }
 
-    void FrontierExtractionManager::innerExtractFrontiers(const int idx){
+    void Frontier2DExtractionManager::innerExtractFrontiers(const int idx){
         
         int temp = idx;
         bool frontier_found = false;
@@ -120,7 +120,7 @@ namespace frontier_extraction{
         }
     }
 
-    void FrontierExtractionManager::extractFrontiers(){
+    void Frontier2DExtractionManager::extractFrontiers(){
 
         resolution_ = grid_->info.resolution;
         width_ = grid_->info.width;
@@ -155,7 +155,7 @@ namespace frontier_extraction{
         frontierClustering();
     }
 
-    void FrontierExtractionManager::clearMarkers(){
+    void Frontier2DExtractionManager::clearMarkers(){
 
         for(int i = 0; i < marker_array_.markers.size(); i++){
             marker_array_.markers[i].action = visualization_msgs::Marker::DELETE;
@@ -169,7 +169,7 @@ namespace frontier_extraction{
         centroids_.resize(frontiers_dim_.size(), {0.0f ,0.0f});
     }
 
-    void FrontierExtractionManager::printMarkers(){
+    void Frontier2DExtractionManager::printMarkers(){
 
         int id = 0;
 
@@ -232,7 +232,7 @@ namespace frontier_extraction{
         }
     }
 
-    void FrontierExtractionManager::frontierClustering(){
+    void Frontier2DExtractionManager::frontierClustering(){
         
         frontier_clustersing_.clear();
         frontier_clustersing_.resize(frontier_points_.size(), 0);
@@ -288,18 +288,18 @@ namespace frontier_extraction{
         }
     }
 
-    void FrontierExtractionManager::main_loop(const ros::TimerEvent& timer)
+    void Frontier2DExtractionManager::main_loop(const ros::TimerEvent& timer)
     {
         time_ += period_; // update time
     }
 
-    void FrontierExtractionManager::spin()
+    void Frontier2DExtractionManager::spin()
     {
         timer_.start();
         //ROS_INFO_STREAM("ForceEstim started looping time " << 1.0/_period << "Hz");
         ros::spin();
     }
 
-    FrontierExtractionManager::~FrontierExtractionManager(){
+    Frontier2DExtractionManager::~Frontier2DExtractionManager(){
     }
 }
