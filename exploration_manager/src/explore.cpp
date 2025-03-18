@@ -29,6 +29,8 @@ Explore::Explore(const std::string& name,
 
 BT::NodeStatus Explore::tick(){
 
+    RCLCPP_INFO(node_->get_logger(), "Explore!");
+
     //Get robot's pose
     try {
         // std::cout << "Look for " << bt_data_->object_name << std::endl;
@@ -42,7 +44,7 @@ BT::NodeStatus Explore::tick(){
         robot_yaw_ = 2.0*atan2(bt_data_->last_robot_pose.transform.rotation.z, 
                                bt_data_->last_robot_pose.transform.rotation.w);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "Could not transform!");
+        RCLCPP_INFO(node_->get_logger(), "Explore: Robot pose not found!");
         return BT::NodeStatus::FAILURE;
     }
 

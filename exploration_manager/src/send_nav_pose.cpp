@@ -7,9 +7,12 @@ SendNavPose::SendNavPose(const std::string& name,
 {   
     //Service Client
     send_candidate_nav_target_ = node_->create_client<centauro_ros_nav_srvs::srv::SendCandidateNavTarget>("/set_candidate_nav_target");
+
+    candidate_nav_target_req_ = std::make_shared<centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Request>();
 }
 
 BT::NodeStatus SendNavPose::tick(){
+    RCLCPP_INFO(node_->get_logger(), "SendNavPose");
 
     candidate_nav_target_req_->target_pose.header.frame_id = bt_data_->world_frame;
 
@@ -37,8 +40,10 @@ BT::NodeStatus SendNavPose::tick(){
     candidate_nav_target_req_->robot_pose.orientation.z = bt_data_->last_robot_pose.transform.rotation.z;
     candidate_nav_target_req_->robot_pose.orientation.w = bt_data_->last_robot_pose.transform.rotation.w;
 
-    candidate_nav_target_res_ = send_candidate_nav_target_->async_send_request(candidate_nav_target_req_);
-    if (rclcpp::spin_until_future_complete(node_, candidate_nav_target_res_) == rclcpp::FutureReturnCode::SUCCESS)
+    candidate_nav_target_fut_ = send_candidate_nav_target_->async_send_request(candidate_nav_target_req_);
+    candidate_nav_target_res_ = candidate_nav_target_fut_.get(); // Blocking call
+
+    if (candidate_nav_target_res_)
     {
         bt_data_->is_driving = true;
         return BT::NodeStatus::SUCCESS;

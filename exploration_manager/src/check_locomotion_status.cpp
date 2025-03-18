@@ -26,7 +26,8 @@ void CheckLocomotionStatus::getNavStatus(const actionlib_msgs::msg::GoalStatusAr
 
 //Check if Ros Nav succeed and also that the robot is "close enough" to desired location
 BT::NodeStatus CheckLocomotionStatus::tick(){
-    
+    RCLCPP_INFO(node_->get_logger(), "CheckLocomotionStatus");
+        
     //Get robot's pose
      try {
         // std::cout << "Look for " << bt_data_->object_name << std::endl;
@@ -36,7 +37,7 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
                                         bt_data_->base_frame, bt_data_->world_frame,
                                         bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "Could not transform!");
+        RCLCPP_INFO(node_->get_logger(), "CheckLocomotionStatus: Could not transform!");
         return BT::NodeStatus::FAILURE;
     }
 

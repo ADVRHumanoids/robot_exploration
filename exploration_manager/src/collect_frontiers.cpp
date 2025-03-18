@@ -18,13 +18,17 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
     time_diff_ = timer_frontiers_;
 
     prev_time_ = node_->get_clock()->now();
+    now_ = prev_time_;
 
     //TF buffer and listener
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+    get_frontiers_req_ = std::make_shared<frontier_extraction_srvs::srv::GetFrontiers::Request>();
 }
 
 BT::NodeStatus CollectFrontiers::tick(){
+    RCLCPP_INFO(node_->get_logger(), "CollectFrontiers");
 
     //Get robot's pose
     try {
@@ -33,7 +37,7 @@ BT::NodeStatus CollectFrontiers::tick(){
                                         bt_data_->base_frame, bt_data_->world_frame,
                                         now_);        
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "Could not transform!");
+        RCLCPP_INFO(node_->get_logger(), "CollectFrontiers: Could not transform!");
 
         return BT::NodeStatus::FAILURE;
     }
@@ -49,16 +53,15 @@ BT::NodeStatus CollectFrontiers::tick(){
         get_frontiers_req_->robot_pose.x = bt_data_->last_robot_pose.transform.translation.x;
         get_frontiers_req_->robot_pose.y = bt_data_->last_robot_pose.transform.translation.y;
         get_frontiers_req_->robot_pose.z = bt_data_->last_robot_pose.transform.translation.z;
+    
+        get_frontiers_fut_ = frontier_extract_srv_->async_send_request(get_frontiers_req_);
+        get_frontiers_res_ = get_frontiers_fut_.get(); // Blocking call
 
-        get_frontiers_res_ = frontier_extract_srv_->async_send_request(get_frontiers_req_);
-        // Wait for the result.
-        if (rclcpp::spin_until_future_complete(node_, get_frontiers_res_) == rclcpp::FutureReturnCode::SUCCESS)
-        {
-            bt_data_->frontiers =  get_frontiers_res_.get()->frontiers;
+        if (get_frontiers_res_){
+            bt_data_->frontiers =  get_frontiers_res_->frontiers;
         } else {
             return BT::NodeStatus::FAILURE;
         }
-
 
         if(bt_data_->frontiers.size() == 0){
             RCLCPP_INFO(node_->get_logger(), "No more frontiers! Exploration finished!");

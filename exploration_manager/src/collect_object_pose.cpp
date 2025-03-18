@@ -13,6 +13,8 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
 }
 
 BT::NodeStatus CollectObjectPose::tick(){
+    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
+    
     //Get objects's pose
     try {
         // std::cout << "Look for " << bt_data_->object_name << std::endl;
@@ -22,7 +24,7 @@ BT::NodeStatus CollectObjectPose::tick(){
             bt_data_->object_name, bt_data_->world_frame,
             bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "Could not transform!");
+        RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Object TF not found!");
         bt_data_->need_exploration = true;
         bt_data_->known_object_pose = false;
         return BT::NodeStatus::FAILURE;

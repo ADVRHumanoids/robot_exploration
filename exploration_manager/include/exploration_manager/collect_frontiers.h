@@ -26,8 +26,8 @@ class CollectFrontiers : public BT::SyncActionNode
 {
   public:
     CollectFrontiers(const std::string& name,
-                      const BT::NodeConfig &config,
-                      rclcpp::Node::SharedPtr node);
+                     const BT::NodeConfig &config,
+                     rclcpp::Node::SharedPtr node);
     
     static BT::PortsList providedPorts() {
         return {};
@@ -45,7 +45,8 @@ class CollectFrontiers : public BT::SyncActionNode
     rclcpp::Client<frontier_extraction_srvs::srv::GetFrontiers>::SharedPtr frontier_extract_srv_;
 
     frontier_extraction_srvs::srv::GetFrontiers::Request::SharedPtr get_frontiers_req_;
-    rclcpp::Client< frontier_extraction_srvs::srv::GetFrontiers>::SharedFuture get_frontiers_res_;
+    rclcpp::Client<frontier_extraction_srvs::srv::GetFrontiers>::SharedFuture get_frontiers_fut_;
+    frontier_extraction_srvs::srv::GetFrontiers::Response::SharedPtr get_frontiers_res_;
 
     //Nav2 Action Client
     rclcpp_action::Client<NavigateToPose>::SharedPtr nav2_client_ptr_;
