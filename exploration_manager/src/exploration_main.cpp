@@ -38,10 +38,10 @@ int main(int argc, char * argv[])
     node->declare_parameter("bt_file", "");
     std::string bt_file = node->get_parameter("bt_file").as_string();
 
-    node->declare_parameter("robot_exploration/world_frame", "map");
-    bt_data_->world_frame = node->get_parameter("robot_exploration/world_frame").as_string();
-    node->declare_parameter("robot_exploration/base_frame", "pelvis");
-    bt_data_->base_frame = node->get_parameter("robot_exploration/base_frame").as_string();
+    node->declare_parameter("robot_exploration.world_frame", "map");
+    bt_data_->world_frame = node->get_parameter("robot_exploration.world_frame").as_string();
+    node->declare_parameter("robot_exploration.base_frame", "pelvis");
+    bt_data_->base_frame = node->get_parameter("robot_exploration.base_frame").as_string();
 
     //Tf buffer and listener
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node->get_clock());
@@ -61,7 +61,7 @@ int main(int argc, char * argv[])
 
     BT::BehaviorTreeFactory bt_factory;
 
-    //Sping ROS node on a separate thread to allow also tick of the tree while managing ros services/actions 
+    //Spin ROS node on a separate thread to allow also tick of the tree while managing ros services/actions 
     std::thread spin_thread = std::thread([node]() {
         rclcpp::spin(node->get_node_base_interface()); 
     });
@@ -80,6 +80,8 @@ int main(int argc, char * argv[])
 
     //Tick tree
     tree.tickWhileRunning(); 
+
+    while(1);
 
     rclcpp::shutdown();
     return 0;

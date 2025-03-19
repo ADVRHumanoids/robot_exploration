@@ -24,15 +24,6 @@ BT::NodeStatus CheckExplorationRequest::tick(){
     if(action_goal_handle_ == nullptr){
         return BT::NodeStatus::FAILURE;
     }
-
-    //If goal canceled
-    if(action_goal_handle_->is_canceling()){
-        action_result_->found = false;
-        action_goal_handle_->canceled(action_result_);
-        RCLCPP_INFO(node_->get_logger(), "Goal canceled");
-        resetState();
-        return BT::NodeStatus::FAILURE;
-    }
     
     //If exploration finished
     if(bt_data_->finished_exploration){
@@ -44,6 +35,13 @@ BT::NodeStatus CheckExplorationRequest::tick(){
         //Reset goal handle
         action_goal_handle_ = nullptr;
         return BT::NodeStatus::SUCCESS;
+    }
+    else if(action_goal_handle_->is_canceling()){
+        // action_result_->found = false;
+        action_goal_handle_->canceled(action_result_);
+        RCLCPP_INFO(node_->get_logger(), "Goal canceled");
+        // resetState();
+        return BT::NodeStatus::FAILURE;
     }
     else{
         action_feedback_->finished = false;

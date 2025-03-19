@@ -12,8 +12,8 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
     nav2_client_ptr_ = rclcpp_action::create_client<NavigateToPose>(node_,
                                                                     "/navigate_to_pose");
     //Param get
-    node_->declare_parameter("robot_exploration/exploration/timer_frontiers", 5.0);
-    timer_frontiers_ = node_->get_parameter("robot_exploration/exploration/timer_frontiers").as_double();
+    node_->declare_parameter("robot_exploration.exploration.timer_frontiers", 5.0);
+    timer_frontiers_ = node_->get_parameter("robot_exploration.exploration.timer_frontiers").as_double();
 
     time_diff_ = timer_frontiers_;
 
@@ -28,7 +28,7 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
 }
 
 BT::NodeStatus CollectFrontiers::tick(){
-    RCLCPP_INFO(node_->get_logger(), "CollectFrontiers");
+    // RCLCPP_INFO(node_->get_logger(), "CollectFrontiers");
 
     //Get robot's pose
     try {
@@ -45,9 +45,12 @@ BT::NodeStatus CollectFrontiers::tick(){
     time_diff_ =  static_cast<float>(now_.seconds()) - static_cast<float>(prev_time_.seconds()) +
                  (static_cast<float>(now_.nanoseconds()) - static_cast<float>(prev_time_.nanoseconds()))*10e-9;
 
-    RCLCPP_INFO(node_->get_logger(), "Timer: %f", time_diff_);
+    // RCLCPP_INFO(node_->get_logger(), "Timer: %f", time_diff_);
 
     if(time_diff_ > timer_frontiers_ || bt_data_->force_frontier_update){
+        
+        RCLCPP_INFO(node_->get_logger(), "CollectFrontiers: Timer: %f - ForceUpdate: %d", time_diff_, bt_data_->force_frontier_update);
+       
         prev_time_ = now_;
 
         bt_data_->force_frontier_update = false;

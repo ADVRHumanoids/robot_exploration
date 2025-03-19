@@ -5,15 +5,15 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
                                      rclcpp::Node::SharedPtr node) :
     BT::SyncActionNode(name, config), node_(node)
 {
-    node_->declare_parameter("robot_exploration/distance_target_object", 0.85);
-    distance_target_object_ = node_->get_parameter("robot_exploration/distance_target_object").as_double();
+    node_->declare_parameter("robot_exploration.distance_target_object", 0.85);
+    distance_target_object_ = node_->get_parameter("robot_exploration.distance_target_object").as_double();
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 }
 
 BT::NodeStatus CollectObjectPose::tick(){
-    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
+    // RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
     
     //Get objects's pose
     try {
@@ -24,7 +24,7 @@ BT::NodeStatus CollectObjectPose::tick(){
             bt_data_->object_name, bt_data_->world_frame,
             bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Object TF not found!");
+        // RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Object TF not found!");
         bt_data_->need_exploration = true;
         bt_data_->known_object_pose = false;
         return BT::NodeStatus::FAILURE;

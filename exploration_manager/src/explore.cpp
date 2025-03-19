@@ -5,21 +5,21 @@ Explore::Explore(const std::string& name,
                  rclcpp::Node::SharedPtr node) :
     BT::SyncActionNode(name, config), node_(node)
 {
-    node_->declare_parameter("robot_exploration/exploration/min_dist_frontier_robot", 0.25);
-    node_->declare_parameter("robot_exploration/exploration/cost_function/n_points", 4.0);
-    node_->declare_parameter("robot_exploration/exploration/cost_function/euclidean_distance", 12.0);
-    node_->declare_parameter("robot_exploration/exploration/cost_function/rotation_distance", 25.0);
-    node_->declare_parameter("robot_exploration/exploration/cost_function/distance_prev_target", 17.0);
-    node_->declare_parameter("robot_exploration/exploration/cost_function/close_frontiers", 5.0);
+    node_->declare_parameter("robot_exploration.exploration.min_dist_frontier_robot", 0.25);
+    node_->declare_parameter("robot_exploration.exploration.cost_function.n_points", 4.0);
+    node_->declare_parameter("robot_exploration.exploration.cost_function.euclidean_distance", 12.0);
+    node_->declare_parameter("robot_exploration.exploration.cost_function.rotation_distance", 25.0);
+    node_->declare_parameter("robot_exploration.exploration.cost_function.distance_prev_target", 17.0);
+    node_->declare_parameter("robot_exploration.exploration.cost_function.close_frontiers", 5.0);
     
-    min_dist_frontier_robot_ = node_->get_parameter("robot_exploration/exploration/min_dist_frontier_robot").as_double();
+    min_dist_frontier_robot_ = node_->get_parameter("robot_exploration.exploration.min_dist_frontier_robot").as_double();
     min_dist_frontier_robot_ = min_dist_frontier_robot_*min_dist_frontier_robot_;
 
-    cost_n_points_ = node_->get_parameter("robot_exploration/exploration/cost_function/n_points").as_double();
-    cost_euclidean_distance_ = node_->get_parameter("robot_exploration/exploration/cost_function/euclidean_distance").as_double();
-    cost_rotation_distance_ = node_->get_parameter("robot_exploration/exploration/cost_function/rotation_distance").as_double();
-    cost_distance_prev_target_ = node_->get_parameter("robot_exploration/exploration/cost_function/distance_prev_target").as_double();
-    cost_neighbors_ = node_->get_parameter("robot_exploration/exploration/cost_function/close_frontiers").as_double();
+    cost_n_points_ = node_->get_parameter("robot_exploration.exploration.cost_function.n_points").as_double();
+    cost_euclidean_distance_ = node_->get_parameter("robot_exploration.exploration.cost_function.euclidean_distance").as_double();
+    cost_rotation_distance_ = node_->get_parameter("robot_exploration.exploration.cost_function.rotation_distance").as_double();
+    cost_distance_prev_target_ = node_->get_parameter("robot_exploration.exploration.cost_function.distance_prev_target").as_double();
+    cost_neighbors_ = node_->get_parameter("robot_exploration.exploration.cost_function.close_frontiers").as_double();
     
     close_frontiers_ = {};
 
@@ -29,7 +29,7 @@ Explore::Explore(const std::string& name,
 
 BT::NodeStatus Explore::tick(){
 
-    RCLCPP_INFO(node_->get_logger(), "Explore!");
+    // RCLCPP_INFO(node_->get_logger(), "Explore!");
 
     //Get robot's pose
     try {

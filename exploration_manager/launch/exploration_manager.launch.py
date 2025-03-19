@@ -13,6 +13,7 @@ from launch.actions import (
 from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 
 
 def generate_launch_description():
@@ -38,16 +39,20 @@ def generate_launch_description():
     )
 
     declare_frontier_2d_cmd = DeclareLaunchArgument(
-        'frontier_2d', default_value='False', description='Whether to use 2D or 3D frontiers'
+        'frontier_2d', 
+        default_value='False', 
+        description='Whether to use 2D or 3D frontiers'
     )
 
     # Launch Exploration BT
-    valid_target_selector_cmd = Node(
+    exploration_params_file = os.path.join(exploration_manager_dir, 'config', 'exploration_config_centauro.yaml')
+
+    exploration_main_cmd = Node(
         package='exploration_manager',
         executable='exploration_main',
         name='exploration_main',
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time},
+        parameters=[exploration_params_file,
                     {'bt_file'   : bt_file}]
     )
 
@@ -78,19 +83,7 @@ def generate_launch_description():
     ld.add_action(declare_bt_file_cmd)
     ld.add_action(declare_frontier_2d_cmd)
 
-    ld.add_action(valid_target_selector_cmd)
+    ld.add_action(exploration_main_cmd)
     ld.add_action(frontier_seg_cmd)
     
     return ld
-
-# <launch>
-
-#     <arg name="frontiers_2d" default="true"/>
-     
-#     <include file="$(find frontier_extraction)/launch/frontier_extraction.launch">
-#         <arg name="frontiers_2d" value="$(arg frontiers_2d)"/>
-#     </include>
-
-#     <rosparam command="load" file="$(find exploration_manager)/config/exploration_config.yaml"/>
-
-# </launch> 

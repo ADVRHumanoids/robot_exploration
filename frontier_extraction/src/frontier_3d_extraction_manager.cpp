@@ -129,7 +129,7 @@ namespace frontier_extraction{
     void Frontier3DExtractionManager::extractFrontiers(){
         frontier_points_.clear();
         
-        RCLCPP_INFO(this->get_logger(), "Extract Frontiers");
+        // RCLCPP_INFO(this->get_logger(), "Extract Frontiers");
         //Get Frontier Points
         for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(octree_->getTreeDepth()); n != octree_->end_leafs(); ++n)
         {
@@ -139,7 +139,7 @@ namespace frontier_extraction{
                 frontier_points_.push_back({point3d(n.getX(), n.getY(), n.getZ()), 0});
         }
 
-        RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
+        // RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
         //Cluster frontier points
         int id = 1;
         double max_distance_ = pow(2.5*octree_->getResolution(), 2);

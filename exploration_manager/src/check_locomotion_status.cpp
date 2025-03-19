@@ -5,12 +5,12 @@ CheckLocomotionStatus::CheckLocomotionStatus(const std::string& name,
                                              rclcpp::Node::SharedPtr node) :
     BT::SyncActionNode(name, config), node_(node)
 {
-    node_->declare_parameter("robot_exploration/min_nav_target_distance", 0.85);
-    min_nav_target_distance_ = node_->get_parameter("robot_exploration/min_nav_target_distance").as_double();
+    node_->declare_parameter("robot_exploration.min_nav_target_distance", 0.85);
+    min_nav_target_distance_ = node_->get_parameter("robot_exploration.min_nav_target_distance").as_double();
     min_nav_target_distance_ = min_nav_target_distance_*min_nav_target_distance_; // Consider squared
 
-    node_->declare_parameter("robot_exploration/min_dist_frontier_robot", 0.85);
-    min_frontier_distance_ = node_->get_parameter("robot_exploration/min_dist_frontier_robot").as_double();
+    node_->declare_parameter("robot_exploration.min_dist_frontier_robot", 0.85);
+    min_frontier_distance_ = node_->get_parameter("robot_exploration.min_dist_frontier_robot").as_double();
     min_frontier_distance_ = min_frontier_distance_*min_frontier_distance_; // Consider squared
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
@@ -26,7 +26,7 @@ void CheckLocomotionStatus::getNavStatus(const actionlib_msgs::msg::GoalStatusAr
 
 //Check if Ros Nav succeed and also that the robot is "close enough" to desired location
 BT::NodeStatus CheckLocomotionStatus::tick(){
-    RCLCPP_INFO(node_->get_logger(), "CheckLocomotionStatus");
+    // RCLCPP_INFO(node_->get_logger(), "CheckLocomotionStatus");
         
     //Get robot's pose
      try {
