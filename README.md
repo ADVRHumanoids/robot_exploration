@@ -1,5 +1,4 @@
-# This readme is for ROS1 --> TO BE UPDATED FOR ROS2
-# robot_exploration 
+# robot_exploration - ROS2
 Set of packages for robot exploration on occupancy map.
 
 - 2D Occupancy map with octomap from pointcloud (LiDAR, RGB-D,...)
@@ -9,29 +8,27 @@ Set of packages for robot exploration on occupancy map.
 Robot independent, provides as output the goal pose to reach, sent to the MoveBase of the Nav Stack (within the BT).
 
 # Dependencies
-- ROS (noetic)
+- ROS (jazzy)
 - XBot
 - CartesIO
 - iit-centauro-ros-pkg
 - realsense and velodyne packages
-- centauro_ros_nav (branch: exploration)
-- sudo apt install ros-$ROS_DISTRO-aruco-detect
 - octomap
-- hhcm_perception [Optional]
+- centauro_ros_nav (branch: ros2)
+- perception_utils (branch: ros2)
+- object_detection_manager (branch: ros2) [Optional]
 
-
-# How to launch [Only exploration]
-- roslaunch gazebo_odom start_simulation.launch [Launch gazebo, rviz and gazebo odom]
-- xbot2-core --simtime
-- rosservice call /xbotcore/homing/switch 1
-- rosservice call /xbotcore/omnisteering/switch 1
-- roslaunch hhcm_perception filtering.launch [Optional: but change ros_nav according to point cloud]
-- roslaunch centauro_ros_nav centauro_nav.launch
-- roslaunch exploration_manager exploration_manager.launch
-- 
 
 # NOTE
 The input of the Exploration is the *frame_name* of the object that you want to find. The exploration checks in "KnownTargetPose" if such frame exists. If it exists, then a Nav Target is sent to the object. Otherwise, the robot will start/continue the exploration.
 
 
 Using frames, if the transform map-obj is no longer valid/published, then exploration resumes. 
+
+# Exploration [with YOLO]
+- ros2 launch gazebo_odom start_simulation.launch.py
+- ros2 service call /xbotcore/omnisteering/switch std_srvs/srv/SetBool data:\ true\
+- ros2 launch centauro_ros_nav centauro_nav.launch.py
+- ros2 launch exploration_manager exploration_manager.launch.py
+- ros2 run object_detection_manager object_detection_node [Optional]
+- ros2 action send_goal /request_exploration exploration_manager_actions/action/RequestExploration object_name:\ \'obj1\'\
