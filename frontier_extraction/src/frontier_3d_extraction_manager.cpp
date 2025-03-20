@@ -9,7 +9,7 @@ namespace frontier_extraction{
     using std::chrono::milliseconds;
     
     Frontier3DExtractionManager::Frontier3DExtractionManager ()
-    : Node("frontier_3d_extractor")
+    : Node("frontier_3d_extraction_node")
     {
         initNode();
     }
@@ -40,7 +40,17 @@ namespace frontier_extraction{
 
         octomap_sub_ = this->create_subscription<octomap_msgs::msg::Octomap>("/local/octomap_full", 10, octomapCallback);
 
-        min_frontier_points_ = 5;
+        this->declare_parameter("min_frontier_points", 10);
+        min_frontier_points_ = this->get_parameter("min_frontier_points").as_int();
+
+        this->declare_parameter("tree_depth", 16);
+        tree_depth_ = this->get_parameter("tree_depth").as_int();
+
+        this->declare_parameter("max_point_distance_gain", 4.5);
+        max_point_distance_gain_ = this->get_parameter("max_point_distance_gain").as_double();
+
+        this->declare_parameter("max_dist_z_gain", 1.5);
+        max_dist_z_gain_ = this->get_parameter("max_dist_z_gain").as_double();
 
         frontier_points_ = {};
         frontier_clusters_ = {};
@@ -53,6 +63,10 @@ namespace frontier_extraction{
             return ;
 
         auto t1 = high_resolution_clock::now();
+
+        if(tree_depth_ > octree_->getTreeDepth())
+            tree_depth_ = octree_->getTreeDepth();
+
         pelvis_pos_map_.x() = request->robot_pose.x;
         pelvis_pos_map_.y() = request->robot_pose.y;
         pelvis_pos_map_.z() = request->robot_pose.z;
@@ -160,10 +174,9 @@ namespace frontier_extraction{
         // RCLCPP_INFO(this->get_logger(), "Extract Frontiers");
         //Get Frontier Points
         //Max Tree Depth 16 --> Speed up considering higher Depth  /octree_->getTreeDepth()
-        for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(15); n != octree_->end_leafs(); ++n)
+        for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(tree_depth_); n != octree_->end_leafs(); ++n)
         {
             // unsigned long int num_free = 0; //number of free cube around frontier, for filtering out fake frontier
-
             if(octree_->isNodeOccupied(*n) && isFrontierXY(n.getCoordinate()))
                 frontier_points_.push_back({point3d(n.getX(), n.getY(), n.getZ()), 0});
         }
@@ -171,7 +184,7 @@ namespace frontier_extraction{
         // RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
         //Cluster frontier points
         int id = 1;
-        double max_distance_ = pow(2.5*2.0*octree_->getResolution(), 2);
+        double max_distance_ = pow(max_point_distance_gain_*octree_->getResolution(), 2);
         
         if(static_cast<int>(frontier_points_.size()) > 0){
             frontier_points_[0].second = 1;
@@ -186,7 +199,7 @@ namespace frontier_extraction{
         for(int i = 1; i < static_cast<int>(frontier_points_.size()); i++){                 
             for(int j = 0; j < i; j++){       
 
-                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= 1.5*octree_->getResolution())
+                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= max_dist_z_gain_*octree_->getResolution())
                     continue;
                 
                 distance_ = pow(frontier_points_[i].first.x() - frontier_points_[j].first.x(), 2) + 

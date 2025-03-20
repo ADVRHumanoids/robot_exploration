@@ -1,0 +1,9 @@
+frontier_3d_extraction_node:
+  ros__parameters:
+    use_sim_time: True
+
+    min_frontier_points: 5
+
+    tree_depth: 15 # Max 16
+    max_point_distance_gain: 3.5 #This is multiplied by the resolution of the tree 
+    max_dist_z_gain: 1.5 #This is multiplied by the resolution of the tree 

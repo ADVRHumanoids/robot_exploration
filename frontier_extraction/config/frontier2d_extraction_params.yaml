@@ -1,0 +1,6 @@
+frontier_2d_extraction_node:
+  ros__parameters:
+    use_sim_time: True
+
+    min_frontier_points: 10
+    max_point_distance: 1   #In grid cells

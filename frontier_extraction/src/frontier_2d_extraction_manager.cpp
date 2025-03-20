@@ -3,7 +3,7 @@
 namespace frontier_extraction{
 
     Frontier2DExtractionManager::Frontier2DExtractionManager()
-    : Node("frontier_2d_extractor")
+    : Node("frontier_2d_extraction_node")
     {
         initNode();
     }
@@ -25,8 +25,11 @@ namespace frontier_extraction{
 
         occupancy_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("/map", 10, occupancyCallback);
 
+        this->declare_parameter("min_frontier_points", 10);
+        min_frontier_points_ = this->get_parameter("min_frontier_points").as_int();
 
-        min_frontier_points_ = 10;
+        this->declare_parameter("max_point_distance", 1);
+        max_frontier_distance_ = this->get_parameter("max_point_distance").as_int();
     }
     
     void Frontier2DExtractionManager::getFrontiersSrv(const std::shared_ptr<frontier_extraction_srvs::srv::GetFrontiers::Request>  request,
@@ -145,7 +148,7 @@ namespace frontier_extraction{
 
     void Frontier2DExtractionManager::printMarkers(){
 
-        int id = 0;
+        marker_id_ = 0;
 
         clearMarkers();
    
@@ -158,24 +161,24 @@ namespace frontier_extraction{
             marker.action = visualization_msgs::msg::Marker::ADD;
             marker.scale.x = marker.scale.y = marker.scale.z = 0.25;
 
-            if(frontiers_dim_[frontier_clustersing_[id]] < min_frontier_points_){
-                id++;
+            if(frontiers_dim_[frontier_clustersing_[marker_id_]] < min_frontier_points_){
+                marker_id_++;
                 continue;
             }
 
             marker.color.a = 1.0;
-            marker.color.r = 1.0*static_cast<float>(frontier_clustersing_[id])/static_cast<float>(max_cluster_);
+            marker.color.r = 1.0*static_cast<float>(frontier_clustersing_[marker_id_])/static_cast<float>(max_cluster_);
             marker.color.b = 1.0 - marker.color.r;
             marker.color.g = 1.0 - 0.5*marker.color.r;
             
             marker.pose.position.x = (itr%width_)*resolution_ + occupancy_->info.origin.position.x;
             marker.pose.position.y = (itr/width_)*resolution_ + occupancy_->info.origin.position.y;
 
-            centroids_[frontier_clustersing_[id]][0] += marker.pose.position.x;
-            centroids_[frontier_clustersing_[id]][1] += marker.pose.position.y;
+            centroids_[frontier_clustersing_[marker_id_]][0] += marker.pose.position.x;
+            centroids_[frontier_clustersing_[marker_id_]][1] += marker.pose.position.y;
 
             marker.pose.orientation.w = 1.0f;
-            marker.id = (id++);
+            marker.id = (marker_id_++);
 
             marker_array_.markers.push_back(marker);
         }
@@ -192,7 +195,7 @@ namespace frontier_extraction{
             marker.color.a = 0.85;
             marker.color.r = 1.0;
 
-            marker.id = (id++);
+            marker.id = (marker_id_++);
 
             if(frontiers_dim_[i] >= min_frontier_points_){
                 centroids_[i][0] = centroids_[i][0]/static_cast<float>(frontiers_dim_[i]);
@@ -211,54 +214,51 @@ namespace frontier_extraction{
         frontier_clustersing_.clear();
         frontier_clustersing_.resize(frontier_points_.size(), 0);
 
-        int id = 0, id2 = 0;
+        marker_id_ = 0;
+        marker_id2_ = 0;
         max_cluster_ = 1;
         
-        int distance;
-
-        int max_distance = 1;
-
-        //frontier_clustersing_[id] = max_cluster_;
+        //frontier_clustersing_[marker_id_] = max_cluster_;
         frontiers_dim_ = {0};
 
         // For each point classified as frontier
         for(auto itr : frontier_points_){
             
             // Check min distance wrt already classified points            
-            id2 = 0;
+            marker_id2_ = 0;
             for(auto itr2 : frontier_points_){
                                
                 if(itr == itr2)
                     break;
                 
-                distance = std::abs(itr%width_ - itr2%width_) + std::abs(itr/width_ - itr2/width_);
+                cell_distance_ = std::abs(itr%width_ - itr2%width_) + std::abs(itr/width_ - itr2/width_);
 
-                if(distance <= max_distance){
-                    if(frontier_clustersing_[id] != 0 && frontier_clustersing_[id] != frontier_clustersing_[id2])
+                if(cell_distance_ <= max_frontier_distance_){
+                    if(frontier_clustersing_[marker_id_] != 0 && frontier_clustersing_[marker_id_] != frontier_clustersing_[marker_id2_])
                     {
-                        for(int i = 0; i < id; i++){
-                            if(frontier_clustersing_[i] == frontier_clustersing_[id])
-                                frontier_clustersing_[i] = frontier_clustersing_[id2];
+                        for(int i = 0; i < marker_id_; i++){
+                            if(frontier_clustersing_[i] == frontier_clustersing_[marker_id_])
+                                frontier_clustersing_[i] = frontier_clustersing_[marker_id2_];
                         }
 
-                        frontiers_dim_[frontier_clustersing_[id2]] += frontiers_dim_[frontier_clustersing_[id]];
-                        frontiers_dim_[frontier_clustersing_[id]] = 0;
+                        frontiers_dim_[frontier_clustersing_[marker_id2_]] += frontiers_dim_[frontier_clustersing_[marker_id_]];
+                        frontiers_dim_[frontier_clustersing_[marker_id_]] = 0;
                     }
 
-                    frontier_clustersing_[id] = frontier_clustersing_[id2];
+                    frontier_clustersing_[marker_id_] = frontier_clustersing_[marker_id2_];
                 }
 
-                id2 ++;
+                marker_id2_ ++;
             }
 
-            if(frontier_clustersing_[id] == 0){
-                frontier_clustersing_[id] = (max_cluster_++);
+            if(frontier_clustersing_[marker_id_] == 0){
+                frontier_clustersing_[marker_id_] = (max_cluster_++);
                 frontiers_dim_.push_back(1);
             }
             else
-                frontiers_dim_[frontier_clustersing_[id]] ++;
+                frontiers_dim_[frontier_clustersing_[marker_id_]] ++;
 
-            id ++;
+            marker_id_ ++;
         }
     }
 
