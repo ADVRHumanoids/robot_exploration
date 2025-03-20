@@ -34,7 +34,7 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
         bt_data_->now = node_->get_clock()->now();
         
         bt_data_->last_robot_pose = tf_buffer_->lookupTransform(
-                                        bt_data_->base_frame, bt_data_->world_frame,
+                                        bt_data_->world_frame, bt_data_->base_frame,
                                         bt_data_->now);
     } catch (const tf2::TransformException & ex) {
         RCLCPP_WARN(node_->get_logger(), "CheckLocomotionStatus: Could not transform!");

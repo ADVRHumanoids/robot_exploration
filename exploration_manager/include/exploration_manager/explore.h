@@ -42,6 +42,7 @@ class Explore : public BT::SyncActionNode
     float cost_n_points_, cost_euclidean_distance_, cost_distance_prev_target_;
     float cost_neighbors_, cost_rotation_distance_;
     float robot_yaw_, temp_ang_diff_, temp_ang_, angle_;
+    float min_distance_robot_frontier_, close_frontiers_distance_;
 
     std::vector<uint8_t> close_frontiers_;
     

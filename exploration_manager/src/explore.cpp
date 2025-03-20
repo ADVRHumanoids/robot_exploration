@@ -11,6 +11,8 @@ Explore::Explore(const std::string& name,
     node_->declare_parameter("robot_exploration.exploration.cost_function.rotation_distance", 25.0);
     node_->declare_parameter("robot_exploration.exploration.cost_function.distance_prev_target", 17.0);
     node_->declare_parameter("robot_exploration.exploration.cost_function.close_frontiers", 5.0);
+    node_->declare_parameter("robot_exploration.exploration.close_frontiers_distance", 2.0);
+    node_->declare_parameter("robot_exploration.exploration.min_distance_robot_frontier", 0.5);
     
     min_dist_frontier_robot_ = node_->get_parameter("robot_exploration.exploration.min_dist_frontier_robot").as_double();
     min_dist_frontier_robot_ = min_dist_frontier_robot_*min_dist_frontier_robot_;
@@ -20,7 +22,12 @@ Explore::Explore(const std::string& name,
     cost_rotation_distance_ = node_->get_parameter("robot_exploration.exploration.cost_function.rotation_distance").as_double();
     cost_distance_prev_target_ = node_->get_parameter("robot_exploration.exploration.cost_function.distance_prev_target").as_double();
     cost_neighbors_ = node_->get_parameter("robot_exploration.exploration.cost_function.close_frontiers").as_double();
-    
+    close_frontiers_distance_ = node_->get_parameter("robot_exploration.exploration.close_frontiers_distance").as_double();
+    close_frontiers_distance_ = close_frontiers_distance_*close_frontiers_distance_;
+
+    min_distance_robot_frontier_ = node_->get_parameter("robot_exploration.exploration.min_distance_robot_frontier").as_double();
+    min_distance_robot_frontier_ = min_distance_robot_frontier_*min_distance_robot_frontier_;
+
     close_frontiers_ = {};
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
@@ -37,7 +44,8 @@ BT::NodeStatus Explore::tick(){
         bt_data_->now = node_->get_clock()->now();
         
         bt_data_->last_robot_pose = tf_buffer_->lookupTransform(
-                                        bt_data_->base_frame, bt_data_->world_frame,
+                                        bt_data_->world_frame,
+                                        bt_data_->base_frame,
                                         bt_data_->now);
 
         //TODO: Use fastatan
@@ -52,45 +60,45 @@ BT::NodeStatus Explore::tick(){
     //Compute cost/utility function
     cost_min_ = 100000.0f;
     max_frontier_idx_ = -1;
-    angle_ = 6.28f;
+    angle_ =  0.0f;
 
     // ROS_WARN("Number of Clusters: %d", static_cast<int>(bt_data_->frontiers.size()));
 
+    //Reset "close_frontiers_"
     close_frontiers_.resize(static_cast<int>(bt_data_->frontiers.size()));
-    for(int i = 0; i < static_cast<int>(bt_data_->frontiers.size()); i++){
+    for(int i = 0; i < static_cast<int>(bt_data_->frontiers.size()); i++)
         close_frontiers_[i] = 0;
-    }
 
     for(int i = 0; i < static_cast<int>(bt_data_->frontiers.size()); i++){
+        //Skip uninitiliazed frontiers
         if(bt_data_->frontiers[i].centroid.x == 0.0f || 
            bt_data_->frontiers[i].centroid.y == 0.0f)
            continue;
 
         //Compute distance between this frontier and all the others
         for(int j = i+1; j < static_cast<int>(bt_data_->frontiers.size()); j++){
-            temp_distance_ += (pow(bt_data_->frontiers[i].centroid.x - bt_data_->frontiers[j].centroid.x, 2) + 
-                               pow(bt_data_->frontiers[i].centroid.y - bt_data_->frontiers[j].centroid.y, 2));
+            temp_distance_ = pow(bt_data_->frontiers[i].centroid.x - bt_data_->frontiers[j].centroid.x, 2) + 
+                             pow(bt_data_->frontiers[i].centroid.y - bt_data_->frontiers[j].centroid.y, 2);
             
-            // Check numbers of frontiers in a neighboorhood of 2m
-            if(temp_distance_ < 4.0f){
+            // Check numbers of frontiers in a neighboorhood
+            if(temp_distance_ < close_frontiers_distance_){
                 close_frontiers_[i] += 1;
                 close_frontiers_[j] += 1;
             }
         }
-        //Distance to robot
-        squared_euclidean_distance_ = (pow(bt_data_->frontiers[i].centroid.x - bt_data_->last_robot_pose.transform.translation.x, 2) + 
-                                       pow(bt_data_->frontiers[i].centroid.y - bt_data_->last_robot_pose.transform.translation.y, 2));
 
-        //TODO get from param
+        //Distance frontier-robot
+        squared_euclidean_distance_ = pow(bt_data_->frontiers[i].centroid.x - bt_data_->last_robot_pose.transform.translation.x, 2) + 
+                                      pow(bt_data_->frontiers[i].centroid.y - bt_data_->last_robot_pose.transform.translation.y, 2);
+
         //Avoid sending targets close to the robot (within nav tolerance), otherwise: stuck!
-        if(squared_euclidean_distance_ < 0.16f)
+        if(squared_euclidean_distance_ < min_distance_robot_frontier_)
             continue;
 
-
         //Distance to prev nav target(frontier)
-        squared_distance_to_prev_target_ = (pow(bt_data_->frontiers[i].centroid.x - bt_data_->locomotion_target.position.x, 2) + 
-                                            pow(bt_data_->frontiers[i].centroid.y - bt_data_->locomotion_target.position.y, 2));
-        
+        squared_distance_to_prev_target_ = pow(bt_data_->frontiers[i].centroid.x - bt_data_->locomotion_target.position.x, 2) + 
+                                           pow(bt_data_->frontiers[i].centroid.y - bt_data_->locomotion_target.position.y, 2);
+
         //TODO: Use fastatan
         temp_ang_ = atan2(bt_data_->frontiers[i].centroid.y - bt_data_->last_robot_pose.transform.translation.y,
                           bt_data_->frontiers[i].centroid.x - bt_data_->last_robot_pose.transform.translation.x);
@@ -103,23 +111,32 @@ BT::NodeStatus Explore::tick(){
         if(temp_ang_diff_ > 3.14f)
             temp_ang_diff_ = 6.28f - temp_ang_diff_; 
         
-
-        //Frontier size - Distance to robot - Distance to prev nav target - frontiers close
+        /* Compute the cost:
+           - Frontier points
+           - Distance to robot 
+           - Rotation required to face frontier 
+           - Distance to prev nav target 
+           - frontiers close
+        */
         cost_ = cost_n_points_ * 1.0f/(static_cast<float>(1 + bt_data_->frontiers[i].number_of_points)) + 
                 cost_euclidean_distance_ * squared_euclidean_distance_ + 
                 cost_rotation_distance_ * temp_ang_diff_ +
                 cost_distance_prev_target_ * squared_distance_to_prev_target_ +
                 cost_neighbors_ * 1.0f/(static_cast<float>(1 + close_frontiers_[i]));
         
-        if(cost_ < cost_min_){
+        RCLCPP_DEBUG(node_->get_logger(), "Explore: Front %d - Dist: %f, Cost: %f", i, sqrt(squared_euclidean_distance_), cost_);
+
+        if(cost_ < cost_min_ || max_frontier_idx_ == -1){
             cost_min_ = cost_;
             max_frontier_idx_ = i;
             angle_ = temp_ang_;
         }
     }
     
-    if(max_frontier_idx_ == -1)
+    if(max_frontier_idx_ == -1){
+        RCLCPP_WARN(node_->get_logger(), "Explore: Not found! (frontiers: %ld)", bt_data_->frontiers.size());
         return BT::NodeStatus::FAILURE;
+    }
 
     bt_data_->locomotion_target.position.x = bt_data_->frontiers[max_frontier_idx_].centroid.x;
     bt_data_->locomotion_target.position.y = bt_data_->frontiers[max_frontier_idx_].centroid.y;

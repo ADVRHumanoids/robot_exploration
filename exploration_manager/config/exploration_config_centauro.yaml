@@ -14,9 +14,13 @@ exploration_main:
         timer_frontiers: 10.0 # [Seconds]
         min_dist_frontier_robot: 0.25 # [m]
 
+        close_frontiers_distance: 2.0 # Radius for considering close frontiers
+
+        min_distance_robot_frontier: 1.0
+
         cost_function:
-          n_points: 7.5
+          n_points: 5.0
           euclidean_distance: 10.0 # Closer to the robot, the better (multiplied by the inverse of the distance)
-          rotation_distance: 30.0
-          distance_prev_target: 15.0 # Close to previous target is better, to avoid switching from one side of the map to the other one
-          close_frontiers: 3.0
+          rotation_distance: 50.0
+          distance_prev_target: 25.0 # Close to previous target is better, to avoid switching from one side of the map to the other one
+          close_frontiers: 5.0
