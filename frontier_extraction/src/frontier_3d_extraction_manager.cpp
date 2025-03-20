@@ -1,7 +1,13 @@
 #include <frontier_extraction/frontier_3d_extraction_manager.h>
+#include <chrono>
 
 namespace frontier_extraction{
 
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration_cast;
+    using std::chrono::duration;
+    using std::chrono::milliseconds;
+    
     Frontier3DExtractionManager::Frontier3DExtractionManager ()
     : Node("frontier_3d_extractor")
     {
@@ -12,7 +18,8 @@ namespace frontier_extraction{
     {
        //Service Server
         get_frontiers_srv_ = this->create_service<frontier_extraction_srvs::srv::GetFrontiers>("/get_frontiers",
-                             std::bind(&Frontier3DExtractionManager::getFrontiersSrv, this, std::placeholders::_1, std::placeholders::_2));
+                             std::bind(&Frontier3DExtractionManager::getFrontiersSrv, this, 
+                                        std::placeholders::_1, std::placeholders::_2));
         //Publisher
         marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/frontier_markers",
                             rclcpp::QoS(rclcpp::KeepLast(10)).reliable().transient_local());
@@ -45,26 +52,26 @@ namespace frontier_extraction{
         if(octree_ == nullptr)
             return ;
 
-        // auto t1 = high_resolution_clock::now();
+        auto t1 = high_resolution_clock::now();
         pelvis_pos_map_.x() = request->robot_pose.x;
         pelvis_pos_map_.y() = request->robot_pose.y;
         pelvis_pos_map_.z() = request->robot_pose.z;
 
         extractFrontiers();        
-        // auto t2 = high_resolution_clock::now();
+        auto t2 = high_resolution_clock::now();
 
-        // ROS_INFO("Frontier Points added: %ld", static_cast<int>(frontier_points_.size()));
+        // RCLCPP_INFO(this->get_logger(), "Frontier Points added: %ld", static_cast<int>(frontier_points_.size()));
         
         // Publish frontiers and set service response
         printMarkers();
-        // auto t3 = high_resolution_clock::now();
+        auto t3 = high_resolution_clock::now();
 
         marker_pub_->publish(marker_array_);
         
-        // duration<double, std::milli> ms_double = t2 - t1;
-        // ROS_INFO("Extract Frontiers: %f", ms_double.count());
-        // ms_double = t3 - t2;
-        // ROS_INFO("Markers: %f", ms_double.count());
+        duration<double, std::milli> ms_double = t2 - t1;
+        // RCLCPP_INFO(this->get_logger(), "Extract Frontiers: %f", ms_double.count());
+        ms_double = t3 - t2;
+        // RCLCPP_INFO(this->get_logger(), "Markers: %f", ms_double.count());
 
         setFrontierResponse(response);
     }
@@ -90,39 +97,60 @@ namespace frontier_extraction{
     bool Frontier3DExtractionManager::isFrontierXY(const point3d &p){
         //if there are unknown around the cube, the cube is frontier
         num_occupied_ = 0;
-        //Check on the same plane
-         for(int f_x = -1; f_x <= 1; f_x++){
-             for(int f_y = -1; f_y <= 1; f_y++){
-                 if(f_x == 0 && f_y == 0)
-                     continue;
-
-                 n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
-                                                           p.y() + f_y*octree_->getResolution(),
-                                                           p.z()));
-                
-                 if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_)){
-                     num_occupied_ ++;
-                     if(num_occupied_ > 6)
-                         return false;
-                 }
-             }
-         }
-
-        //TODO: IMPROVE
-        //Check on up and down (2*resolution to be more robust)        
-        n_cur_frontier_ = octree_->search(point3d(p.x(),
-                                                  p.y(),
-                                                  p.z() - 2.0*octree_->getResolution()));
         
-        if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_)){
-            n_cur_frontier_ = octree_->search(point3d(p.x(),
-                                                      p.y(),
-                                                      p.z() + 1.0*octree_->getResolution()));
+        // Check neighbors at the same level (Z) of the candidate 
+        for(int f_x = -1; f_x <= 1; f_x++){
+            for(int f_y = -1; f_y <= 1; f_y++){
+                if(f_x == 0 && f_y == 0)
+                    continue;
 
-            if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_))
-                return true;
-        }        
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
+                                                          p.y() + f_y*octree_->getResolution(),
+                                                          p.z()));
+            
+                if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_))
+                    num_occupied_ ++;
+            }
+        }
+
+        bool frontier = false;
+        if(num_occupied_ > 5)
+            return false;
+        else if(num_occupied_ >= 3)
+            frontier = true;
         
+        int num_occupied_up_ = 0;
+        // Check neighbors at one level higher (Z) of the candidate 
+        for(int f_x = -1; f_x <= 1; f_x++){
+            for(int f_y = -1; f_y <= 1; f_y++){
+
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
+                                                          p.y() + f_y*octree_->getResolution(),
+                                                          p.z() + 1.0*octree_->getResolution()));
+            
+                if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_)){
+                    num_occupied_up_ ++;
+                    if(frontier && num_occupied_up_ >= 2)
+                        return false;
+                    else if(!frontier && num_occupied_up_ >= 3)
+                        return false;
+                }
+            }
+        }
+        
+        //Not a frontier if below ALL occupied (to be more robust on the floor with noise)
+        for(int f_x = -1; f_x <= 1; f_x++){
+            for(int f_y = -1; f_y <= 1; f_y++){
+
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
+                                                          p.y() + f_y*octree_->getResolution(),
+                                                          p.z() - 1.0*octree_->getResolution()));
+            
+                if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_))
+                    return true;
+            }
+        }
+
         return false;
     }
 
@@ -131,7 +159,8 @@ namespace frontier_extraction{
         
         // RCLCPP_INFO(this->get_logger(), "Extract Frontiers");
         //Get Frontier Points
-        for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(octree_->getTreeDepth()); n != octree_->end_leafs(); ++n)
+        //Max Tree Depth 16 --> Speed up considering higher Depth  /octree_->getTreeDepth()
+        for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(15); n != octree_->end_leafs(); ++n)
         {
             // unsigned long int num_free = 0; //number of free cube around frontier, for filtering out fake frontier
 
@@ -142,7 +171,7 @@ namespace frontier_extraction{
         // RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
         //Cluster frontier points
         int id = 1;
-        double max_distance_ = pow(2.5*octree_->getResolution(), 2);
+        double max_distance_ = pow(2.5*2.0*octree_->getResolution(), 2);
         
         if(static_cast<int>(frontier_points_.size()) > 0){
             frontier_points_[0].second = 1;
