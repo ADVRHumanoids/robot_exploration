@@ -17,7 +17,7 @@ BT::NodeStatus SendNavPose::tick(){
     candidate_nav_target_req_->target_pose.header.frame_id = bt_data_->world_frame;
 
     //If the previous target is almost the same as the new one, do not send again (< 10cm)
-    if(bt_data_->is_driving && !bt_data_->force_frontier_update && 
+    if(bt_data_->is_driving && //!bt_data_->force_frontier_update && 
        pow(candidate_nav_target_req_->target_pose.pose.position.x - bt_data_->locomotion_target.position.x, 2) +
        pow(candidate_nav_target_req_->target_pose.pose.position.x - bt_data_->locomotion_target.position.x, 2) < 0.01f){
         return BT::NodeStatus::SUCCESS;

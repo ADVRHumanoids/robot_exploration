@@ -44,7 +44,7 @@ BT::NodeStatus Explore::tick(){
         robot_yaw_ = 2.0*atan2(bt_data_->last_robot_pose.transform.rotation.z, 
                                bt_data_->last_robot_pose.transform.rotation.w);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "Explore: Robot pose not found!");
+        RCLCPP_WARN(node_->get_logger(), "Explore: Robot pose not found!");
         return BT::NodeStatus::FAILURE;
     }
 
@@ -123,6 +123,8 @@ BT::NodeStatus Explore::tick(){
 
     bt_data_->locomotion_target.position.x = bt_data_->frontiers[max_frontier_idx_].centroid.x;
     bt_data_->locomotion_target.position.y = bt_data_->frontiers[max_frontier_idx_].centroid.y;
+
+    RCLCPP_DEBUG(node_->get_logger(), "Exploration Point: %f %f", bt_data_->locomotion_target.position.x, bt_data_->locomotion_target.position.y);
     
     //Direction to face the target
     bt_data_->locomotion_target.orientation.z = sin(angle_/2);

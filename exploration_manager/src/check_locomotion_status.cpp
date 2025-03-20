@@ -37,26 +37,27 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
                                         bt_data_->base_frame, bt_data_->world_frame,
                                         bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "CheckLocomotionStatus: Could not transform!");
+        RCLCPP_WARN(node_->get_logger(), "CheckLocomotionStatus: Could not transform!");
         return BT::NodeStatus::FAILURE;
     }
 
     if(msg_ == nullptr)
         return BT::NodeStatus::FAILURE;
 
+    status_msg_id_ = msg_->status_list.size() - 1;
+
     // Consider the last in status_list
-    if(msg_->status_list.size() > 0){
+    if(status_msg_id_ >= 0){
         
-        // SUCCEEDED
         // If Exploring and close to nav target
-        if(!bt_data_->known_object_pose && msg_->status_list[msg_->status_list.size()-1].status == 1 &&
+        if(!bt_data_->known_object_pose && msg_->status_list[status_msg_id_].status == GoalStatus::ACTIVE &&
             (pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
              pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2) < min_frontier_distance_))
         {
             RCLCPP_INFO(node_->get_logger(), "Force Frontier Update");
             bt_data_->force_frontier_update = true;
         }
-        else if(msg_->status_list[msg_->status_list.size()-1].status == 3){                
+        else if(msg_->status_list[status_msg_id_].status == GoalStatus::SUCCEEDED){                
             bt_data_->is_driving = false;
             // bt_data_->finished_exploration = true;
             
@@ -78,11 +79,18 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
                 else
                     return BT::NodeStatus::SUCCESS;
             }
+            else{
+                RCLCPP_INFO(node_->get_logger(), "Locomotion Ended...");                
+            }
         }
-        else if(msg_->status_list[msg_->status_list.size()-1].status == 4){
+        else if(msg_->status_list[status_msg_id_].status == GoalStatus::ABORTED){
+            RCLCPP_INFO(node_->get_logger(), "Locomotion Aborted...");  
             bt_data_->is_driving = false;
             bt_data_->need_exploration = true;
             bt_data_->finished_exploration = false;
+        }
+        else{
+            RCLCPP_INFO(node_->get_logger(), "Not previous cases in locomotion...");
         }
     }
 

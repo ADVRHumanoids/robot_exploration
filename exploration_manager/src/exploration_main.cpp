@@ -56,7 +56,7 @@ int main(int argc, char * argv[])
                                             bt_data_->base_frame, bt_data_->world_frame,
                                             bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node->get_logger(), "Could not transform!");
+        RCLCPP_WARN(node->get_logger(), "Could not transform!");
     }
 
     BT::BehaviorTreeFactory bt_factory;

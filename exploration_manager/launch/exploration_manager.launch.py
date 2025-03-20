@@ -12,6 +12,7 @@ from launch.actions import (
 )
 from launch.substitutions import LaunchConfiguration
 
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from nav2_common.launch import RewrittenYaml
 
@@ -20,6 +21,7 @@ def generate_launch_description():
 
     #LaunchConfiguration
     exploration_manager_dir = get_package_share_directory('exploration_manager')
+    frontier_extraction_dir = get_package_share_directory('frontier_extraction')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     bt_file = LaunchConfiguration('bt_file')
@@ -57,24 +59,13 @@ def generate_launch_description():
     )
 
     #Launch Frontier Extraction Module
-    frontier_seg_cmd = Node(
-        condition=IfCondition(frontier_2d),
-        package='frontier_extraction',
-        executable='frontier_2d_extraction_node',
-        name='frontier_2d_extraction_node',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
+    frontier_seg_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(frontier_extraction_dir, 'launch', 'frontier_extraction_launch.py')),
+        launch_arguments={
+            'use_sim_time': use_sim_time,
+            'frontier_2d': frontier_2d,
+        }.items(),
     )
-
-    frontier_seg_cmd = Node(
-        condition=UnlessCondition(frontier_2d),
-        package='frontier_extraction',
-        executable='frontier_3d_extraction_node',
-        name='frontier_3d_extraction_node',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-
 
     # Create the launch description and populate
     ld = LaunchDescription()

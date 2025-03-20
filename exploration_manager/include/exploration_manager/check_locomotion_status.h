@@ -14,8 +14,8 @@
 using namespace BT;
 using std::placeholders::_1;
 
+using GoalStatus = actionlib_msgs::msg::GoalStatus;
 using NavToPose = nav2_msgs::action::NavigateToPose;
-// using GoalHandleNavToPos = rclcpp_action::ClientGoalHandle<NavToPose>;
 
 class CheckLocomotionStatus : public BT::SyncActionNode
 {
@@ -42,6 +42,7 @@ class CheckLocomotionStatus : public BT::SyncActionNode
     actionlib_msgs::msg::GoalStatusArray::SharedPtr msg_; 
 
     float min_nav_target_distance_, min_frontier_distance_;
+    int status_msg_id_;
 
     void getNavStatus(const actionlib_msgs::msg::GoalStatusArray::SharedPtr msg);
 };

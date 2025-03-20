@@ -37,7 +37,7 @@ BT::NodeStatus CollectFrontiers::tick(){
                                         bt_data_->base_frame, bt_data_->world_frame,
                                         now_);        
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_INFO(node_->get_logger(), "CollectFrontiers: Could not transform!");
+        RCLCPP_WARN(node_->get_logger(), "CollectFrontiers: Could not transform!");
 
         return BT::NodeStatus::FAILURE;
     }
