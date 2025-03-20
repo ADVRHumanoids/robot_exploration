@@ -46,9 +46,12 @@ namespace frontier_extraction{
 
         octomap::OcTreeNode *n_cur_frontier_;
         bool frontier_true_;         // whether or not a frontier point
-        bool consider_only_current_z_;            //whether or not belong to old group
+        bool only_ground_frontiers_;
         double distance_, max_point_distance_gain_, max_dist_z_gain_;
-        int num_occupied_, tree_depth_;
+        int num_occupied_, num_occupied_up_, tree_depth_;
+        double depth_gain_resolution_;
+
+        int max_occupied_same_lv_, max_occupied_up_lv_;
 
         int min_frontier_points_;
 

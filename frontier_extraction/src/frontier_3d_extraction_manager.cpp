@@ -45,12 +45,21 @@ namespace frontier_extraction{
 
         this->declare_parameter("tree_depth", 16);
         tree_depth_ = this->get_parameter("tree_depth").as_int();
+        depth_gain_resolution_ = pow(2.0, static_cast<double>(16 - tree_depth_));
 
         this->declare_parameter("max_point_distance_gain", 4.5);
         max_point_distance_gain_ = this->get_parameter("max_point_distance_gain").as_double();
 
         this->declare_parameter("max_dist_z_gain", 1.5);
         max_dist_z_gain_ = this->get_parameter("max_dist_z_gain").as_double();
+
+        this->declare_parameter("only_ground_frontiers", false);
+        only_ground_frontiers_ = this->get_parameter("only_ground_frontiers").as_bool();
+
+        this->declare_parameter("frontier_check.max_occupied_same_lv", 5);
+        max_occupied_same_lv_ = this->get_parameter("frontier_check.max_occupied_same_lv").as_int();
+        this->declare_parameter("frontier_check.max_occupied_up_lv", 3);
+        max_occupied_up_lv_ = this->get_parameter("frontier_check.max_occupied_up_lv").as_int();
 
         frontier_points_ = {};
         frontier_clusters_ = {};
@@ -64,8 +73,10 @@ namespace frontier_extraction{
 
         auto t1 = high_resolution_clock::now();
 
-        if(tree_depth_ > octree_->getTreeDepth())
+        if(tree_depth_ > octree_->getTreeDepth()){
             tree_depth_ = octree_->getTreeDepth();
+            depth_gain_resolution_ = pow(2.0, static_cast<double>(16 - tree_depth_));
+        }
 
         pelvis_pos_map_.x() = request->robot_pose.x;
         pelvis_pos_map_.y() = request->robot_pose.y;
@@ -112,41 +123,40 @@ namespace frontier_extraction{
         //if there are unknown around the cube, the cube is frontier
         num_occupied_ = 0;
         
+        double updated_resolution_ = depth_gain_resolution_*octree_->getResolution();
+
         // Check neighbors at the same level (Z) of the candidate 
         for(int f_x = -1; f_x <= 1; f_x++){
             for(int f_y = -1; f_y <= 1; f_y++){
                 if(f_x == 0 && f_y == 0)
                     continue;
 
-                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
-                                                          p.y() + f_y*octree_->getResolution(),
-                                                          p.z()));
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*updated_resolution_,
+                                                          p.y() + f_y*updated_resolution_,
+                                                          p.z()),
+                                                          tree_depth_);
             
                 if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_))
                     num_occupied_ ++;
             }
         }
 
-        bool frontier = false;
-        if(num_occupied_ > 5)
+        if(num_occupied_ > max_occupied_same_lv_)
             return false;
-        else if(num_occupied_ >= 3)
-            frontier = true;
         
-        int num_occupied_up_ = 0;
+        num_occupied_up_ = 0;
         // Check neighbors at one level higher (Z) of the candidate 
         for(int f_x = -1; f_x <= 1; f_x++){
             for(int f_y = -1; f_y <= 1; f_y++){
 
-                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
-                                                          p.y() + f_y*octree_->getResolution(),
-                                                          p.z() + 1.0*octree_->getResolution()));
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*updated_resolution_,
+                                                          p.y() + f_y*updated_resolution_,
+                                                          p.z() + 1.0*updated_resolution_),
+                                                          tree_depth_);
             
                 if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_)){
                     num_occupied_up_ ++;
-                    if(frontier && num_occupied_up_ >= 2)
-                        return false;
-                    else if(!frontier && num_occupied_up_ >= 3)
+                    if(num_occupied_up_ >= max_occupied_up_lv_)
                         return false;
                 }
             }
@@ -156,9 +166,10 @@ namespace frontier_extraction{
         for(int f_x = -1; f_x <= 1; f_x++){
             for(int f_y = -1; f_y <= 1; f_y++){
 
-                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*octree_->getResolution(),
-                                                          p.y() + f_y*octree_->getResolution(),
-                                                          p.z() - 1.0*octree_->getResolution()));
+                n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*updated_resolution_,
+                                                          p.y() + f_y*updated_resolution_,
+                                                          p.z() - 1.0*updated_resolution_),
+                                                          tree_depth_);
             
                 if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_))
                     return true;
@@ -176,6 +187,9 @@ namespace frontier_extraction{
         //Max Tree Depth 16 --> Speed up considering higher Depth  /octree_->getTreeDepth()
         for(octomap::OcTree::leaf_iterator n = octree_->begin_leafs(tree_depth_); n != octree_->end_leafs(); ++n)
         {
+            if(only_ground_frontiers_ && n.getZ() > pelvis_pos_map_.z() - 0.50)
+                continue;
+
             // unsigned long int num_free = 0; //number of free cube around frontier, for filtering out fake frontier
             if(octree_->isNodeOccupied(*n) && isFrontierXY(n.getCoordinate()))
                 frontier_points_.push_back({point3d(n.getX(), n.getY(), n.getZ()), 0});
@@ -184,7 +198,7 @@ namespace frontier_extraction{
         // RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
         //Cluster frontier points
         int id = 1;
-        double max_distance_ = pow(max_point_distance_gain_*octree_->getResolution(), 2);
+        double max_distance_ = pow(max_point_distance_gain_*depth_gain_resolution_*octree_->getResolution(), 2);
         
         if(static_cast<int>(frontier_points_.size()) > 0){
             frontier_points_[0].second = 1;
@@ -199,7 +213,7 @@ namespace frontier_extraction{
         for(int i = 1; i < static_cast<int>(frontier_points_.size()); i++){                 
             for(int j = 0; j < i; j++){       
 
-                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= max_dist_z_gain_*octree_->getResolution())
+                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= depth_gain_resolution_*max_dist_z_gain_*octree_->getResolution())
                     continue;
                 
                 distance_ = pow(frontier_points_[i].first.x() - frontier_points_[j].first.x(), 2) + 
