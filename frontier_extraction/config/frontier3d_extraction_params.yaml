@@ -2,8 +2,15 @@ frontier_3d_extraction_node:
   ros__parameters:
     use_sim_time: True
 
-    min_frontier_points: 5
+    min_frontier_points: 7  # This does not change with [tree_depth]
 
-    tree_depth: 15 # Max 16
-    max_point_distance_gain: 3.5 #This is multiplied by the resolution of the tree 
+    only_ground_frontiers: true
+
+    tree_depth: 15 # Tree depth to use for search for frontiers: [Max 16]
+    max_point_distance_gain: 2.5 #This is multiplied by the resolution of the tree [and based on tree_depth]
     max_dist_z_gain: 1.5 #This is multiplied by the resolution of the tree 
+    
+    frontier_check:
+      max_occupied_same_lv: 6  #5
+      max_occupied_up_lv: 2  #2
+      
