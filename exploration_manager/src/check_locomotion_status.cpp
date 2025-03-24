@@ -4,11 +4,18 @@ CheckLocomotionStatus::CheckLocomotionStatus(const std::string& name,
                                              const BT::NodeConfig &config,
                                              rclcpp::Node::SharedPtr node) :
     BT::SyncActionNode(name, config), node_(node)
-{
+{   
+    // Distance from nav target
     node_->declare_parameter("robot_exploration.min_nav_target_distance", 0.85);
     min_nav_target_distance_ = node_->get_parameter("robot_exploration.min_nav_target_distance").as_double();
     min_nav_target_distance_ = min_nav_target_distance_*min_nav_target_distance_; // Consider squared
 
+    // Distance to target object (when known pose)
+    node_->declare_parameter("robot_exploration.distance_target_object", 0.85);
+    distance_target_object_ = node_->get_parameter("robot_exploration.distance_target_object").as_double();
+    distance_target_object_ = distance_target_object_*distance_target_object_; // Consider squared
+
+    //Distance to frontier
     node_->declare_parameter("robot_exploration.min_dist_frontier_robot", 0.85);
     min_frontier_distance_ = node_->get_parameter("robot_exploration.min_dist_frontier_robot").as_double();
     min_frontier_distance_ = min_frontier_distance_*min_frontier_distance_; // Consider squared
@@ -30,7 +37,6 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
         
     //Get robot's pose
      try {
-        // std::cout << "Look for " << bt_data_->object_name << std::endl;
         bt_data_->now = node_->get_clock()->now();
         
         bt_data_->last_robot_pose = tf_buffer_->lookupTransform(
@@ -41,18 +47,39 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
         return BT::NodeStatus::FAILURE;
     }
 
-    if(msg_ == nullptr)
+    temp_distance_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
+                     pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2);
+
+    if(msg_ == nullptr){
+        //Check if reach target (in that case no more status is published by nav2)
+        if(temp_distance_ < min_nav_target_distance_){
+
+            RCLCPP_INFO(node_->get_logger(), "Nav Target Reached!");
+
+            //If we arrived to the object --> Finish, else change frontier
+            bt_data_->need_exploration = !(bt_data_->known_object_pose);
+            bt_data_->finished_exploration = bt_data_->known_object_pose;
+
+            if(!bt_data_->known_object_pose)
+                bt_data_->force_frontier_update = true;
+
+            if(bt_data_->finished_exploration)
+                return BT::NodeStatus::FAILURE;
+            else
+                return BT::NodeStatus::SUCCESS;
+        }
+        
         return BT::NodeStatus::FAILURE;
+    }
 
     status_msg_id_ = msg_->status_list.size() - 1;
 
     // Consider the last in status_list
     if(status_msg_id_ >= 0){
         
-        // If Exploring and close to nav target
+        // If Exploring and close to nav target (frontier)
         if(!bt_data_->known_object_pose && msg_->status_list[status_msg_id_].status == GoalStatus::ACTIVE &&
-            (pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
-             pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2) < min_frontier_distance_))
+            (temp_distance_ < min_frontier_distance_))
         {
             RCLCPP_INFO(node_->get_logger(), "Force Frontier Update");
             bt_data_->force_frontier_update = true;
@@ -62,8 +89,7 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
             // bt_data_->finished_exploration = true;
             
             //Check distance to target (to avoid also checking SUCCEED of prev exec.)
-            if(pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
-               pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2) < min_nav_target_distance_){
+            if(bt_data_->known_object_pose && temp_distance_ < min_nav_target_distance_){
 
                 RCLCPP_INFO(node_->get_logger(), "Nav Target Reached!");
 

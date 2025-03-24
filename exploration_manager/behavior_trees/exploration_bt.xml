@@ -6,7 +6,7 @@
             <ForceFailure>
                 <Sequence>
                     <Action ID="CheckExplorationRequest"/>
-                    <Condition ID="IsExplorationRequired"/>
+                    <Condition ID="IsRequestActive"/>
                     <Sequence name="LocomotionToTarget">
                         <Fallback name="DefineNavTarget">
                             <Action ID="CollectObjectPose"/>
@@ -31,7 +31,7 @@
         <Action ID="CollectObjectPose"/>
         <Action ID="Explore"/>
         <Action ID="CheckExplorationRequest"/>
-        <Condition ID="IsExplorationRequired"/>
+        <Condition ID="IsRequestActive"/>
         <Action ID="SendNavPose"/>
     </TreeNodesModel>
     <!-- ////////// -->

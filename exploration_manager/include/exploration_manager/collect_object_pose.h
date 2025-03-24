@@ -10,9 +10,8 @@
 
 #include <exploration_manager/SharedClass.h>
 
-#include "tf2/exceptions.h"
-#include "tf2_ros/transform_listener.h"
-#include "tf2_ros/buffer.h"
+#include <object_detection_srvs/srv/get_objects_info.hpp>
+#include <object_detection_msgs/msg/object_info.hpp>
 
 using namespace BT;
 
@@ -34,10 +33,13 @@ class CollectObjectPose : public BT::SyncActionNode
   private:
     rclcpp::Node::SharedPtr node_;
     
-		std::shared_ptr<tf2_ros::TransformListener> tf_listener_ {nullptr};
-		std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    rclcpp::Client<object_detection_srvs::srv::GetObjectsInfo>::SharedPtr get_objects_info_srv_;
 
-    double angle_, distance_target_object_;
+    object_detection_srvs::srv::GetObjectsInfo::Request::SharedPtr get_objects_req_;
+    rclcpp::Client< object_detection_srvs::srv::GetObjectsInfo>::SharedFuture get_objects_fut_;
+    object_detection_srvs::srv::GetObjectsInfo::Response::SharedPtr get_objects_res_;
+
+    double angle_, distance_to_object_pose_;
 };
 
 #endif

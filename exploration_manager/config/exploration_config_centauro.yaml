@@ -6,9 +6,10 @@ exploration_main:
       world_frame: "map"
       base_frame: "pelvis"
 
-      min_nav_target_distance: 0.15  # [m]
+      min_nav_target_distance: 0.20  # [m]
 
-      distance_target_object: 0.85 # [m]
+      distance_to_object_pose: 0.60 # [m]
+      distance_target_object: 0.90 # [m]
 
       exploration:
         timer_frontiers: 10.0 # [Seconds]

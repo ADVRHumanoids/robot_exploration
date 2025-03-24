@@ -1,5 +1,5 @@
-#ifndef __IS_TASK_COLLECTED__
-#define __IS_TASK_COLLECTED__
+#ifndef __IS_REQUEST_ACTIVE__
+#define __IS_REQUEST_ACTIVE__
 
 #include "behaviortree_cpp/condition_node.h"
 #include "behaviortree_cpp/behavior_tree.h"
@@ -9,6 +9,6 @@
 
 using namespace BT;
 
-BT::NodeStatus IsExplorationRequired();
+BT::NodeStatus IsRequestActive();
 
 #endif

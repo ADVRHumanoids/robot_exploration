@@ -40,7 +40,6 @@ BT::NodeStatus Explore::tick(){
 
     //Get robot's pose
     try {
-        // std::cout << "Look for " << bt_data_->object_name << std::endl;
         bt_data_->now = node_->get_clock()->now();
         
         bt_data_->last_robot_pose = tf_buffer_->lookupTransform(

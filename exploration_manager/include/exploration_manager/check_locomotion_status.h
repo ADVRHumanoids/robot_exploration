@@ -41,8 +41,9 @@ class CheckLocomotionStatus : public BT::SyncActionNode
     
     actionlib_msgs::msg::GoalStatusArray::SharedPtr msg_; 
 
-    float min_nav_target_distance_, min_frontier_distance_;
+    double min_nav_target_distance_, min_frontier_distance_, distance_target_object_;
     int status_msg_id_;
+    double temp_distance_;
 
     void getNavStatus(const actionlib_msgs::msg::GoalStatusArray::SharedPtr msg);
 };

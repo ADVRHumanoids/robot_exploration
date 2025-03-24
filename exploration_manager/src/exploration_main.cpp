@@ -14,7 +14,7 @@
 #include <exploration_manager/check_locomotion_status.h>
 #include <exploration_manager/send_nav_pose.h>
 
-#include <exploration_manager/is_exploration_required.h>
+#include <exploration_manager/is_request_active.h>
 
 #include <exploration_manager/SharedClass.h>
 
@@ -49,7 +49,6 @@ int main(int argc, char * argv[])
 
     //Init robot pose in world frame
      try {
-        // std::cout << "Look for " << bt_data_->object_name << std::endl;
         bt_data_->now = node->get_clock()->now();
         
         bt_data_->last_robot_pose = tf_buffer_->lookupTransform(
@@ -67,7 +66,7 @@ int main(int argc, char * argv[])
     });
 
     //Register BT Nodes
-    bt_factory.registerSimpleCondition("IsExplorationRequired", std::bind(IsExplorationRequired));
+    bt_factory.registerSimpleCondition("IsRequestActive", std::bind(IsRequestActive));
 
     bt_factory.registerNodeType<CheckExplorationRequest>("CheckExplorationRequest", node);
     bt_factory.registerNodeType<CollectObjectPose>("CollectObjectPose", node);

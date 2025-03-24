@@ -26,6 +26,8 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(actionlib_msgs REQUIRED)
+find_package(object_detection_srvs REQUIRED)
+find_package(object_detection_msgs REQUIRED)
 
 include_directories(
   include
@@ -46,12 +48,14 @@ set(dependencies
   tf2_eigen
   nav2_msgs
   actionlib_msgs
+  object_detection_srvs
+  object_detection_msgs
 )
 
 # BT Actions-Conditions
 add_library(bt_nodes SHARED
   src/check_exploration_request.cpp
-  src/is_exploration_required.cpp
+  src/is_request_active.cpp
   src/collect_object_pose.cpp
   src/collect_frontiers.cpp
   src/explore.cpp
