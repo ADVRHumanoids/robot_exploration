@@ -15,9 +15,11 @@ CheckExplorationRequest::CheckExplorationRequest(const std::string& name,
     action_feedback_ = std::make_shared<RequestExploration::Feedback>();
     action_result_ = std::make_shared<RequestExploration::Result>();
 
-    resetState();
+    //Service Client for Nav2 goal cancelling
+    cancel_nav_goal_srv_ = node_->create_client<action_msgs::srv::CancelGoal>("/navigate_to_pose/_action/cancel_goal");
+    cancel_nav_goal_req_ = std::make_shared<action_msgs::srv::CancelGoal::Request>();
 
-    RCLCPP_INFO(node_->get_logger(), "Initialized");
+    resetState();
 }
 
 BT::NodeStatus CheckExplorationRequest::tick(){
@@ -36,16 +38,26 @@ BT::NodeStatus CheckExplorationRequest::tick(){
 
         //Reset goal handle
         action_goal_handle_ = nullptr;
+        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);
         resetState();
         return BT::NodeStatus::FAILURE;
     }
-    // else if(action_goal_handle_->is_canceling()){
-    //     // action_result_->found = false;
-    //     // action_goal_handle_->canceled(action_result_);
-    //     RCLCPP_INFO(node_->get_logger(), "Goal canceled");
-    //     // resetState();
-    //     return BT::NodeStatus::SUCCESS;
-    // }
+    else if(action_goal_handle_->is_canceling()){
+        // action_result_->found = false;
+        // action_goal_handle_->canceled(action_result_);
+        RCLCPP_INFO(node_->get_logger(), "Goal canceled - Stop Robot Nav");
+        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);    
+        bt_data_->is_driving = false;
+
+        resetState();
+
+        action_result_->found = false;
+        action_goal_handle_->succeed(action_result_);
+        //Reset goal handle
+        action_goal_handle_ = nullptr;
+        
+        return BT::NodeStatus::FAILURE;
+    }
     else{
         action_feedback_->finished = false;
         action_result_->found = false;
@@ -86,6 +98,7 @@ void CheckExplorationRequest::resetState(){
     bt_data_->force_frontier_update = false;
     bt_data_->need_exploration = false;
     bt_data_->finished_exploration = false;
+    bt_data_->active_task = false;
 }
 
 void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExploration> goal_handle)
@@ -98,11 +111,14 @@ void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExp
     if(action_goal_handle_ == nullptr)
         RCLCPP_INFO(node_->get_logger(), "GoalHandle nullptr");
 
-    auto goal = goal_handle->get_goal();
+    auto goal = action_goal_handle_->get_goal();
     bt_data_->object_name = goal->object_name;
     bt_data_->force_frontier_update = true;
     bt_data_->need_exploration = true;
-
+    bt_data_->active_task = true;
+    
     action_feedback_->finished = false;
     action_result_->found = false;
+
+    action_goal_handle_->publish_feedback(action_feedback_);
 }

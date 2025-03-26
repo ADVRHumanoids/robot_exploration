@@ -28,6 +28,7 @@ find_package(nav2_msgs REQUIRED)
 find_package(actionlib_msgs REQUIRED)
 find_package(object_detection_srvs REQUIRED)
 find_package(object_detection_msgs REQUIRED)
+find_package(exploration_manager_msgs REQUIRED)
 
 include_directories(
   include
@@ -50,6 +51,7 @@ set(dependencies
   actionlib_msgs
   object_detection_srvs
   object_detection_msgs
+  exploration_manager_msgs
 )
 
 # BT Actions-Conditions

@@ -12,6 +12,8 @@
 
 #include <exploration_manager/SharedClass.h>
 
+#include <action_msgs/srv/cancel_goal.hpp>
+
 using namespace BT;
 using namespace std::placeholders;
 
@@ -41,6 +43,8 @@ class CheckExplorationRequest : public BT::SyncActionNode
 
     std::shared_ptr<GoalHandleRequestExploration> action_goal_handle_;
     
+    rclcpp::Client<action_msgs::srv::CancelGoal>::SharedPtr cancel_nav_goal_srv_;
+    action_msgs::srv::CancelGoal::Request::SharedPtr cancel_nav_goal_req_;
 
     rclcpp_action::GoalResponse handle_goal(
       const rclcpp_action::GoalUUID & uuid,

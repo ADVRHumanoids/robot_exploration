@@ -12,7 +12,7 @@ SendNavPose::SendNavPose(const std::string& name,
 }
 
 BT::NodeStatus SendNavPose::tick(){
-    // RCLCPP_INFO(node_->get_logger(), "SendNavPose");
+    RCLCPP_INFO(node_->get_logger(), "SendNavPose");
     candidate_nav_target_req_->target_pose.header.frame_id = bt_data_->world_frame;
 
     //If the previous target is almost the same as the new one, do not send again (< 10cm)

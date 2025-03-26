@@ -28,7 +28,7 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
 }
 
 BT::NodeStatus CollectFrontiers::tick(){
-    // RCLCPP_INFO(node_->get_logger(), "CollectFrontiers");
+    RCLCPP_INFO(node_->get_logger(), "CollectFrontiers");
 
     //Get robot's pose
     try {

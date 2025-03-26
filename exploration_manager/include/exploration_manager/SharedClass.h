@@ -21,7 +21,7 @@ class SharedClass
 
     geometry_msgs::msg::Pose locomotion_target;
     std::vector<frontier_extraction_msgs::msg::Frontier> frontiers;
-    bool need_exploration, is_driving, finished_exploration;   
+    bool need_exploration, is_driving, finished_exploration, active_task;   
 
     //TF Transforms
     geometry_msgs::msg::TransformStamped last_robot_pose, object_pose;
@@ -36,6 +36,7 @@ class SharedClass
       world_frame = "map";
       base_frame = "base_link";
       frontiers = {};
+      active_task = false;
       need_exploration = false;
       is_driving = false;
       finished_exploration = false;

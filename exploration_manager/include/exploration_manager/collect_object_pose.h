@@ -13,7 +13,10 @@
 #include <object_detection_srvs/srv/get_objects_info.hpp>
 #include <object_detection_msgs/msg/object_info.hpp>
 
+#include <chrono>
+
 using namespace BT;
+using namespace std::chrono_literals;
 
 class CollectObjectPose : public BT::SyncActionNode
 {
@@ -40,6 +43,7 @@ class CollectObjectPose : public BT::SyncActionNode
     object_detection_srvs::srv::GetObjectsInfo::Response::SharedPtr get_objects_res_;
 
     double angle_, distance_to_object_pose_;
+    bool service_available_;
 };
 
 #endif

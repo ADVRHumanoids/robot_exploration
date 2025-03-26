@@ -12,6 +12,9 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
     get_objects_info_srv_ = node_->create_client<object_detection_srvs::srv::GetObjectsInfo>("/get_objects_info");
 
     get_objects_req_ = std::make_shared<object_detection_srvs::srv::GetObjectsInfo::Request>();
+    get_objects_res_ = nullptr;
+    
+    service_available_ = get_objects_info_srv_->wait_for_service(5s);
 }
 
 BT::NodeStatus CollectObjectPose::tick(){
@@ -20,8 +23,10 @@ BT::NodeStatus CollectObjectPose::tick(){
     //Get objects's pose
     get_objects_req_->object_class = bt_data_->object_name;
 
-    get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_);
-    get_objects_res_ = get_objects_fut_.get(); // Blocking call
+    if(service_available_){
+        get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_);
+        get_objects_res_ = get_objects_fut_.get(); // Blocking call
+    }
 
     if (get_objects_res_ != nullptr && get_objects_res_->objects_data.size() > 0){
 

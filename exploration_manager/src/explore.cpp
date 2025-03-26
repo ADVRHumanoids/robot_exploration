@@ -36,7 +36,7 @@ Explore::Explore(const std::string& name,
 
 BT::NodeStatus Explore::tick(){
 
-    // RCLCPP_INFO(node_->get_logger(), "Explore!");
+    RCLCPP_INFO(node_->get_logger(), "Explore!");
 
     //Get robot's pose
     try {

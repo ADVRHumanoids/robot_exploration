@@ -18,6 +18,8 @@
 
 #include <exploration_manager/SharedClass.h>
 
+#include "exploration_manager_msgs/msg/exploration_status.hpp"
+
 #include "tf2/exceptions.h"
 #include "tf2_eigen/tf2_eigen.hpp"
 #include "tf2_ros/transform_listener.h"
@@ -28,11 +30,67 @@ SharedClass *bt_data_ = new SharedClass();
 
 using namespace std::chrono_literals;
 
+class ExploratioMain : public rclcpp::Node
+{
+  public:
+    ExploratioMain()
+    : Node("exploration_main")
+    {
+        exp_status_pub_ = this->create_publisher<exploration_manager_msgs::msg::ExplorationStatus>("/exploration_status", 10);
+        timer_ = this->create_wall_timer(500ms, std::bind(&ExploratioMain::main_loop, this));
+    }
+
+  private:
+    void main_loop()
+    {
+        exp_status_msg_.active_task = bt_data_->active_task;
+        exp_status_msg_.target_object = bt_data_->object_name;
+        exp_status_msg_.location_known = bt_data_->known_object_pose;
+
+        if(bt_data_->known_object_pose){
+            exp_status_msg_.object_target_pos.x = bt_data_->object_pose.transform.translation.x;
+            exp_status_msg_.object_target_pos.y = bt_data_->object_pose.transform.translation.y;
+            exp_status_msg_.object_target_pos.z = bt_data_->object_pose.transform.translation.z;
+        }
+        else{
+            exp_status_msg_.object_target_pos.x = 0.0;
+            exp_status_msg_.object_target_pos.y = 0.0;
+            exp_status_msg_.object_target_pos.z = 0.0;
+        }
+        exp_status_msg_.is_driving = bt_data_->is_driving;
+
+        if(bt_data_->is_driving)
+            exp_status_msg_.nav_target_pose = bt_data_->locomotion_target;
+
+        exp_status_msg_.robot_pos.x = bt_data_->last_robot_pose.transform.translation.x;
+        exp_status_msg_.robot_pos.y = bt_data_->last_robot_pose.transform.translation.y;
+        exp_status_msg_.robot_pos.z = bt_data_->last_robot_pose.transform.translation.z;
+
+        exp_status_msg_.frontiers_number = bt_data_->frontiers.size();
+        exp_status_msg_.finished = bt_data_->finished_exploration;
+
+        exp_status_pub_->publish(exp_status_msg_);
+    }
+
+    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::Publisher<exploration_manager_msgs::msg::ExplorationStatus>::SharedPtr exp_status_pub_;
+    exploration_manager_msgs::msg::ExplorationStatus exp_status_msg_;
+};
+
+// Function to continuously tick the Behavior Tree
+void runBehaviorTree(Tree& tree) {
+    NodeStatus status = NodeStatus::RUNNING;
+    while (rclcpp::ok() && status == NodeStatus::RUNNING) {
+        status = tree.tickWhileRunning();
+        // std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Adjust tick rate if needed
+    }
+}
+
 int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);
-
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("exploration_main");
+    
+    std::shared_ptr<rclcpp::Node> node = std::make_shared<ExploratioMain>();
 
     //Get Parameters
     node->declare_parameter("bt_file", "");
@@ -60,11 +118,6 @@ int main(int argc, char * argv[])
 
     BT::BehaviorTreeFactory bt_factory;
 
-    //Spin ROS node on a separate thread to allow also tick of the tree while managing ros services/actions 
-    std::thread spin_thread = std::thread([node]() {
-        rclcpp::spin(node->get_node_base_interface()); 
-    });
-
     //Register BT Nodes
     bt_factory.registerSimpleCondition("IsRequestActive", std::bind(IsRequestActive));
 
@@ -77,10 +130,10 @@ int main(int argc, char * argv[])
 
     BT::Tree tree = bt_factory.createTreeFromFile(bt_file);
 
-    //Tick tree
-    tree.tickWhileRunning(); 
+    // Run the BT in a separate thread
+    std::thread bt_thread(runBehaviorTree, std::ref(tree));
 
-    while(1);
+    rclcpp::spin(node);
 
     rclcpp::shutdown();
     return 0;

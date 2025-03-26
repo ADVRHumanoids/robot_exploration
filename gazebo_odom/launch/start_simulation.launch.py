@@ -51,7 +51,8 @@ def generate_launch_description():
         DeclareLaunchArgument('paused', default_value='false'),
         DeclareLaunchArgument('gui', default_value='true'),
         DeclareLaunchArgument('verbose', default_value='false'),
-        DeclareLaunchArgument('world_file', default_value=os.path.join(get_package_share_directory('centauro_gazebo'), 'world/centauro.world'))
+        # DeclareLaunchArgument('world_file', default_value=os.path.join(get_package_share_directory('centauro_gazebo'), 'world/centauro.world'))
+        DeclareLaunchArgument('world_file', default_value=os.path.join(get_package_share_directory('gazebo_odom'), 'world', 'room1.world'))
     ]
 
     # Construct `gz_args` with conditional '-r' based on `paused`
