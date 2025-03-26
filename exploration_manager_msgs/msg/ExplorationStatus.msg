@@ -1,0 +1,9 @@
+bool active_task
+string target_object
+bool location_known
+geometry_msgs/Point object_target_pos
+bool is_driving
+geometry_msgs/Point robot_pos
+geometry_msgs/Pose nav_target_pose
+uint8 frontiers_number
+bool finished
