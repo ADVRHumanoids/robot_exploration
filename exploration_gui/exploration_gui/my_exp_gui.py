@@ -1,5 +1,7 @@
 import sys
 import rclpy
+import time
+
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from PyQt5 import QtWidgets, uic
@@ -9,6 +11,7 @@ from std_msgs.msg import String  # Change this to your message type
 from exploration_manager_actions.action import RequestExploration
 from exploration_manager_msgs.msg import ExplorationStatus
 
+from std_srvs.srv import Trigger
 from action_msgs.srv import CancelGoal
 
 class MyExplorationGUI(QtWidgets.QMainWindow):
@@ -30,18 +33,18 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         #Cancel Button
         self.cancel_expl_button = self.findChild(QtWidgets.QPushButton, "cancel_expl_button")
-        self.cancel_expl_button.clicked.connect(self.cancel_exploration)
+        self.cancel_expl_button.clicked.connect(self.cancel_exploration_button_cb)
 
         #SEND GOAL TAB
         #Acquire objects from "Send Goal Window"
         self.objects_menu_text = self.findChild(QtWidgets.QComboBox, "objects_menu")
         self.other_object_text = self.findChild(QtWidgets.QPlainTextEdit, "other_object")
         self.obj_update_button = self.findChild(QtWidgets.QPushButton, "update_button")
-        self.obj_update_button.clicked.connect(self.update_object_list)
+        self.obj_update_button.clicked.connect(self.update_object_list_button_cb)
 
         #Send Goal Button
         self.send_goal_button = self.findChild(QtWidgets.QPushButton, "send_goal_button")
-        self.send_goal_button.clicked.connect(self.send_goal)
+        self.send_goal_button.clicked.connect(self.send_goal_button_cb)
         
         # Parameters
         self.update_objs_needed = True
@@ -49,13 +52,21 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         #OBJECTS TAB
         self.obj_update_button2 = self.findChild(QtWidgets.QPushButton, "update_button_2")
-        self.obj_update_button2.clicked.connect(self.update_object_list)
+        self.obj_update_button2.clicked.connect(self.update_object_list_button_cb)
 
         self.known_objects_list = self.findChild(QtWidgets.QListWidget, "known_objects_list")
         self.obj_centroid_text = self.findChild(QtWidgets.QLabel, "obj_centroid")
         self.properties_window = self.findChild(QtWidgets.QWidget, "properties_window")
 
-        # ROS Setup
+        #DATA MANAGER TAB
+        self.save_data_button = self.findChild(QtWidgets.QPushButton, "save_data_button")
+        self.save_data_button.clicked.connect(self.save_data_button_cb)
+
+        self.saved_frame = self.findChild(QtWidgets.QFrame, "saved_frame")
+        self.saved_frame.setVisible(False)
+        self.save_frame_timer = 0
+
+        # ROS Setupz
         #RequestExploration Action Client
         self.req_exploration_action_srv = ActionClient(self.node, RequestExploration, '/request_exploration')
         self.req_exploration_action_srv.wait_for_server()
@@ -68,9 +79,12 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
             5)
         self.exploration_status = []
 
-        #Cancel Request
+        #Cancel Request Srv Client
         self.cancel_exploration_srv = self.node.create_client(CancelGoal,
                                                               '/request_exploration/_action/cancel_goal')
+        #Image Save Srv Client
+        self.save_image_srv = self.node.create_client(Trigger,
+                                                      '/save_image')
 
         while not self.cancel_exploration_srv.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Service not available, waiting again...')
@@ -79,10 +93,10 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
         self.objects = []
         
     # Callback for Update Obj Button
-    def update_object_list(self):
+    def update_object_list_button_cb(self):
         self.update_objs_needed = True
 
-    def send_goal(self):
+    def send_goal_button_cb(self):
         goal_msg = RequestExploration.Goal()
         
         if self.objects_menu_text.currentText() == "Others":
@@ -94,7 +108,16 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         self.target_object_text.setText(goal_msg.object_name)
 
-    def cancel_exploration(self):
+    def save_data_button_cb(self):
+        trigger_req = Trigger.Request()
+        
+        future = self.save_image_srv.call_async(trigger_req)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        self.saved_frame.setVisible(True)
+        self.save_frame_timer = time.time()
+
+    def cancel_exploration_button_cb(self):
         future = self.cancel_exploration_srv.call_async(self.cancel_exploration_req)
         rclpy.spin_until_future_complete(self.node, future)
 
@@ -125,6 +148,8 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
             self.updateSendGoalTab()
         elif self.tab_widget.currentIndex() == 2:
             self.updateObjectsTab()
+        elif self.tab_widget.currentIndex() == 3:
+            self.updateDataManagerTab()
 
     def can_update_objs(self):
         return self.update_objs_needed
@@ -186,3 +211,8 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
             self.obj_centroid_text.setText(temp_string)
         else:
             self.properties_window.setEnabled(False)
+
+    def updateDataManagerTab(self):
+        if self.save_frame_timer != 0:
+            if time.time() - self.save_frame_timer > 1.0:
+                self.saved_frame.setVisible(False)
