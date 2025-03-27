@@ -1,5 +1,6 @@
 # Define the goal
 string object_name  #Name of the object to 
+uint8 task_id  #0 Reach   -  1 Inspect
 ---
 # Define the result
 bool found

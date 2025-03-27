@@ -44,7 +44,10 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         #Send Goal Button
         self.send_goal_button = self.findChild(QtWidgets.QPushButton, "send_goal_button")
-        self.send_goal_button.clicked.connect(self.send_goal_button_cb)
+        self.send_goal_button.clicked.connect(lambda:self.send_goal_button_cb(0))
+        #Inspect
+        self.inspect_button = self.findChild(QtWidgets.QPushButton, "inspect_button")
+        self.inspect_button.clicked.connect(lambda:self.send_goal_button_cb(1))
         
         # Parameters
         self.update_objs_needed = True
@@ -96,7 +99,7 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
     def update_object_list_button_cb(self):
         self.update_objs_needed = True
 
-    def send_goal_button_cb(self):
+    def send_goal_button_cb(self, task_id=0):
         goal_msg = RequestExploration.Goal()
         
         if self.objects_menu_text.currentText() == "Others":
@@ -104,9 +107,14 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
         else:
             goal_msg.object_name = self.objects_menu_text.currentText()
 
+        goal_msg.task_id = task_id
+
         self.req_exploration_action_srv.send_goal_async(goal_msg)
 
         self.target_object_text.setText(goal_msg.object_name)
+
+        print("Send Exploration Request (Action ID: "+ str(task_id)+")")
+
 
     def save_data_button_cb(self):
         trigger_req = Trigger.Request()
