@@ -59,7 +59,7 @@ BT::NodeStatus SendNavPose::tick(){
 
         //else move to inspection target
         RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (distance: %f)", 
-                                         bt_data_->inspection_steps, INSPECTION_IMAGES,
+                                         bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
                                          distance_to_object_pose_);
 
         // Select nav target in the line, at X distance from object
