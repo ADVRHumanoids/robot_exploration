@@ -16,8 +16,8 @@ class SendNavPose : public BT::SyncActionNode
 {
   public:
     SendNavPose(const std::string& name,
-                      const BT::NodeConfig &config,
-                      rclcpp::Node::SharedPtr node);
+                const BT::NodeConfig &config,
+                rclcpp::Node::SharedPtr node);
     
     static BT::PortsList providedPorts() {
         return {};
@@ -35,7 +35,7 @@ class SendNavPose : public BT::SyncActionNode
     rclcpp::Client< centauro_ros_nav_srvs::srv::SendCandidateNavTarget>::SharedFuture candidate_nav_target_fut_;
     centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Response::SharedPtr candidate_nav_target_res_;
 
-    double distance_to_object_pose_, angle_;
+    double distance_to_nav_target_, distance_to_object_pose_, angle_;
 };
 
 #endif

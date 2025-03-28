@@ -28,6 +28,9 @@ class DefineInspectionGoals : public BT::SyncActionNode
     
   private:
     rclcpp::Node::SharedPtr node_;
+    double angle_;
+
+    double min_distance_to_object_, max_distance_to_object_;
 };
 
 #endif

@@ -26,12 +26,37 @@ class Task{
   public:
 
     Task(unsigned int task_id = 0, std::string object_name="obj"):
-      id(task_id), object_name(object_name)
+      id(task_id), object_name(object_name), nav_targets_({}),
+      inspection_steps(0), images_collected(0)
     {}
+
+    geometry_msgs::msg::Pose getLastNavTarget(){
+      if(inspection_steps < 0 || inspection_steps >= INSPECTION_IMAGES || 
+         inspection_steps > nav_targets_.size())
+
+         return geometry_msgs::msg::Pose();
+
+      return nav_targets_[inspection_steps];
+    }
+
+    void addNavTarget(geometry_msgs::msg::Pose nav_target){
+      nav_targets_.push_back(nav_target);
+    }
+
+    int getNavTargetsNumber(){
+      return static_cast<int>(nav_targets_.size());
+    }
+
+    void clearNavTargets(){
+      nav_targets_.clear();
+    }    
     
     unsigned int id;
     std::string object_name;
     int inspection_steps, images_collected;
+
+    private:
+      std::vector<geometry_msgs::msg::Pose> nav_targets_;
 };
 
 class SharedClass

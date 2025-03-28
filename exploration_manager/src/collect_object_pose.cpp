@@ -11,11 +11,13 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
     get_objects_req_ = std::make_shared<object_detection_srvs::srv::GetObjectsInfo::Request>();
     get_objects_res_ = nullptr;
     
-    service_available_ = get_objects_info_srv_->wait_for_service(5s);
+    service_available_ = get_objects_info_srv_->wait_for_service(20s);
+
+    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Service is %sAVILABLE!", ((service_available_)?"":"UN"));    
 }
 
 BT::NodeStatus CollectObjectPose::tick(){
-    // RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
+    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
     
     //Get objects's pose
     if(bt_data_->current_task < static_cast<int>(bt_data_->tasks.size()))

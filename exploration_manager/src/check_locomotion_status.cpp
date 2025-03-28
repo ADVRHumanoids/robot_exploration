@@ -97,6 +97,13 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
             bt_data_->need_exploration = true;
             bt_data_->finished_exploration = false;
         }
+        else if(msg_->status_list[status_msg_id_].status == GoalStatus::REJECTED ||
+                msg_->status_list[status_msg_id_].status == GoalStatus::PREEMPTING){
+            RCLCPP_INFO(node_->get_logger(), "Nav2 REJECTED or PREEMPTING");
+            RCLCPP_INFO(node_->get_logger(), "TODO: MANAGE THIS!!");
+
+            //TODO: MANAGE THIS!!
+        }
         else{
             RCLCPP_INFO(node_->get_logger(), "Not previous cases in locomotion...");
         }

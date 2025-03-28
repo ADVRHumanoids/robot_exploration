@@ -47,12 +47,38 @@ BT::NodeStatus SendNavPose::tick(){
         //Else Nav Target if provided by "Explore" action
     }
     else if(bt_data_->tasks[bt_data_->current_task].id == 2){ //Inspection Task
+
+        // If not already defined the targets --> Return failure    
+        if(bt_data_->tasks[bt_data_->current_task].getNavTargetsNumber() == 0)
+            return BT::NodeStatus::FAILURE;
+
+        bt_data_->locomotion_target = bt_data_->tasks[bt_data_->current_task].getLastNavTarget();
         
-        distance_to_object_pose_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->object_pose.transform.translation.x, 2) +
-                                   pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->object_pose.transform.translation.y, 2);
+        distance_to_nav_target_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x, 2) +
+                                  pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y, 2);
+
+        //yaw_error        
+        angle_ = atan2(2.0*(bt_data_->last_robot_pose.transform.rotation.x*bt_data_->last_robot_pose.transform.rotation.y +
+                            bt_data_->locomotion_target.orientation.w*bt_data_->last_robot_pose.transform.rotation.z),
+                       1.0 - 2.0*(bt_data_->last_robot_pose.transform.rotation.y*bt_data_->last_robot_pose.transform.rotation.y +
+                                  bt_data_->last_robot_pose.transform.rotation.z*bt_data_->last_robot_pose.transform.rotation.z));
+
+        angle_ -= atan2(2.0*(bt_data_->locomotion_target.orientation.x*bt_data_->locomotion_target.orientation.y + 
+                             bt_data_->locomotion_target.orientation.w*bt_data_->locomotion_target.orientation.z),
+                        1.0 - 2.0*(bt_data_->locomotion_target.orientation.y*bt_data_->locomotion_target.orientation.y + 
+                                   bt_data_->locomotion_target.orientation.z*bt_data_->locomotion_target.orientation.z));
+
+        angle_ = fabs(angle_);
+        if(angle_ > 6.28)
+            angle_ -= 6.28;
+
+        if(angle_ > 3.14)
+            angle_ = 6.28 - angle_;
+
+        RCLCPP_DEBUG(node_->get_logger(), "Angle Diff: %f", angle_);       
 
         //If not driving and close to object, facing it --> acquire image
-        if(!bt_data_->is_driving && distance_to_object_pose_ < 1.0*1.0){
+        if(!bt_data_->is_driving && distance_to_nav_target_ < 0.2*0.2 && angle_ < 0.20){
             bt_data_->acquire_image = true;
             return BT::NodeStatus::FAILURE;
         }
@@ -60,26 +86,7 @@ BT::NodeStatus SendNavPose::tick(){
         //else move to inspection target
         RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (distance: %f)", 
                                          bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
-                                         distance_to_object_pose_);
-
-        // Select nav target in the line, at X distance from object
-        angle_ = atan2(bt_data_->object_pose.transform.translation.y - bt_data_->last_robot_pose.transform.translation.y,
-                       bt_data_->object_pose.transform.translation.x - bt_data_->last_robot_pose.transform.translation.x);
-        
-        // Transform into [-3.14; 3.14]
-        if(angle_ > 3.14)
-            angle_ = angle_ - 6.28*(1.0 + std::floor(angle_/6.28));
-        else if(angle_ < -3.14)
-            angle_ = angle_ + 6.28*(1.0 + std::floor(-angle_/6.28));
-        
-        bt_data_->locomotion_target.position.x = bt_data_->object_pose.transform.translation.x - 0.75*cos(angle_);
-        bt_data_->locomotion_target.position.y = bt_data_->object_pose.transform.translation.y - 0.75*sin(angle_);
-
-        //Define orientation to face the object
-        bt_data_->locomotion_target.orientation.x = 0;
-        bt_data_->locomotion_target.orientation.y = 0;
-        bt_data_->locomotion_target.orientation.z = sin(angle_/2.0);
-        bt_data_->locomotion_target.orientation.w = cos(angle_/2.0);
+                                         distance_to_nav_target_);
     }
 
         //If the previous target is almost the same as the new one, do not send again (< 10cm)

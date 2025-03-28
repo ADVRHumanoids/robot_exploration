@@ -10,9 +10,8 @@ BT::NodeStatus CanAcquireImage(){
         - object in FoV
     */
 
-    if(bt_data_->acquire_image && !bt_data_->is_driving){
+    if(bt_data_->acquire_image && !bt_data_->is_driving)
         return BT::NodeStatus::SUCCESS;
-    }
     
     return BT::NodeStatus::FAILURE;
 }
