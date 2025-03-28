@@ -29,10 +29,10 @@ BT::NodeStatus CheckExplorationRequest::tick(){
         return BT::NodeStatus::FAILURE;
     }
 
-    RCLCPP_INFO(node_->get_logger(), "TaskId: %d,  ActiveTask:%d", bt_data_->tasks[bt_data_->current_task].id, bt_data_->active_task);
+    // RCLCPP_INFO(node_->get_logger(), "TaskId: %d,  ActiveTask:%d", bt_data_->tasks[bt_data_->current_task].id, bt_data_->active_task);
     
-    //If exploration finished
-    if(bt_data_->current_task  >= static_cast<int>(bt_data_->tasks.size()) && !bt_data_->active_task){
+    //If exploration finished (and at least one task was assigned)
+    if(static_cast<int>(bt_data_->tasks.size()) > 0 && bt_data_->current_task  >= static_cast<int>(bt_data_->tasks.size()) && !bt_data_->active_task){
 
         if(bt_data_->need_exploration && !bt_data_->finished_exploration){
             action_feedback_->finished = true;
@@ -104,15 +104,14 @@ void CheckExplorationRequest::handle_accepted(const std::shared_ptr<GoalHandleRe
 }
 
 void CheckExplorationRequest::resetState(){
-    bt_data_->object_name = "";
     bt_data_->known_object_pose = false;
     bt_data_->force_frontier_update = false;
     bt_data_->need_exploration = false;
     bt_data_->finished_exploration = false;
     bt_data_->tasks.clear();
     bt_data_->current_task = 0;
-    bt_data_->inspection_steps = 0;
     bt_data_->active_task = false;
+    bt_data_->acquire_image = false;
 }
 
 void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExploration> goal_handle)
@@ -126,18 +125,17 @@ void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExp
         RCLCPP_INFO(node_->get_logger(), "GoalHandle nullptr");
 
     auto goal = action_goal_handle_->get_goal();
-    bt_data_->object_name = goal->object_name;
 
     //TODO: New Task
     switch(goal->task_id){
         case 1:
-            bt_data_->tasks.push_back(Reach());
+            bt_data_->tasks.push_back(Task(1, goal->object_name));
             break;
         case 2:
-            bt_data_->tasks.push_back(Inspection());
+            bt_data_->tasks.push_back(Task(2, goal->object_name));
             break;
         default:
-            bt_data_->tasks.push_back(Task(0));
+            bt_data_->tasks.push_back(Task());
             break;
     }
 

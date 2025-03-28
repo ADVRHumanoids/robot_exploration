@@ -49,11 +49,18 @@ class ExploratioMain : public rclcpp::Node
     void main_loop()
     {
         exp_status_msg_.active_task = bt_data_->active_task;
-        exp_status_msg_.target_object = bt_data_->object_name;
         exp_status_msg_.location_known = bt_data_->known_object_pose;
 
-        exp_status_msg_.task_id = bt_data_->tasks[bt_data_->current_task].id;
-        exp_status_msg_.images_collected = bt_data_->images_collected;
+        if(bt_data_->current_task >= 0 && bt_data_->current_task < static_cast<int>(bt_data_->tasks.size())){
+            exp_status_msg_.task_id = bt_data_->tasks[bt_data_->current_task].id;
+            exp_status_msg_.target_object = bt_data_->tasks[bt_data_->current_task].object_name;
+            exp_status_msg_.images_collected = bt_data_->tasks[bt_data_->current_task].images_collected;
+        }
+        else{
+            exp_status_msg_.task_id = 0;
+            exp_status_msg_.target_object = "-";
+            exp_status_msg_.images_collected = 0;
+        }
 
         if(bt_data_->known_object_pose){
             exp_status_msg_.object_target_pos.x = bt_data_->object_pose.transform.translation.x;
@@ -121,7 +128,8 @@ int main(int argc, char * argv[])
                                             bt_data_->world_frame, bt_data_->base_frame,
                                             bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_WARN(node->get_logger(), "Could not transform!");
+        RCLCPP_WARN(node->get_logger(), "Could not transform from %s to %s!", bt_data_->world_frame.c_str(),
+                                                                              bt_data_->base_frame.c_str());
     }
 
     BT::BehaviorTreeFactory bt_factory;

@@ -18,7 +18,10 @@ BT::NodeStatus CollectObjectPose::tick(){
     // RCLCPP_INFO(node_->get_logger(), "CollectObjectPose");
     
     //Get objects's pose
-    get_objects_req_->object_class = bt_data_->object_name;
+    if(bt_data_->current_task < static_cast<int>(bt_data_->tasks.size()))
+        get_objects_req_->object_class = bt_data_->tasks[bt_data_->current_task].object_name;
+    else
+        return BT::NodeStatus::FAILURE;
 
     if(service_available_){
         get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_);
