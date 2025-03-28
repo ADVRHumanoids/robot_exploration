@@ -39,6 +39,7 @@ set(dependencies
   rclcpp_lifecycle
   std_msgs
   geometry_msgs
+  std_srvs
   exploration_manager_actions
   frontier_extraction_msgs
   frontier_extraction_srvs
@@ -63,6 +64,11 @@ add_library(bt_nodes SHARED
   src/explore.cpp
   src/check_locomotion_status.cpp
   src/send_nav_pose.cpp
+  src/can_acquire_image.cpp
+  src/acquire_image.cpp
+  src/is_object_pose_known.cpp
+  src/is_task_inspection.cpp
+  src/define_inspection_goals.cpp
 )
 
 ament_target_dependencies(bt_nodes

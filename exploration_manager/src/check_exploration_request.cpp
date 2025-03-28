@@ -28,12 +28,23 @@ BT::NodeStatus CheckExplorationRequest::tick(){
     if(action_goal_handle_ == nullptr){
         return BT::NodeStatus::FAILURE;
     }
+
+    RCLCPP_INFO(node_->get_logger(), "TaskId: %d,  ActiveTask:%d", bt_data_->tasks[bt_data_->current_task].id, bt_data_->active_task);
     
     //If exploration finished
-    if(bt_data_->finished_exploration){
-        action_feedback_->finished = true;
-        action_result_->found = true;
-        RCLCPP_INFO(node_->get_logger(), "Goal succeeded");
+    if(bt_data_->current_task  >= static_cast<int>(bt_data_->tasks.size()) && !bt_data_->active_task){
+
+        if(bt_data_->need_exploration && !bt_data_->finished_exploration){
+            action_feedback_->finished = true;
+            action_result_->found = false;
+            RCLCPP_INFO(node_->get_logger(), "Failed Exploration!");
+        }
+        else{
+            action_feedback_->finished = true;
+            action_result_->found = true;
+            RCLCPP_INFO(node_->get_logger(), "Goal succeeded");
+        }
+
         action_goal_handle_->succeed(action_result_);
 
         //Reset goal handle
@@ -98,6 +109,9 @@ void CheckExplorationRequest::resetState(){
     bt_data_->force_frontier_update = false;
     bt_data_->need_exploration = false;
     bt_data_->finished_exploration = false;
+    bt_data_->tasks.clear();
+    bt_data_->current_task = 0;
+    bt_data_->inspection_steps = 0;
     bt_data_->active_task = false;
 }
 
@@ -113,6 +127,20 @@ void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExp
 
     auto goal = action_goal_handle_->get_goal();
     bt_data_->object_name = goal->object_name;
+
+    //TODO: New Task
+    switch(goal->task_id){
+        case 1:
+            bt_data_->tasks.push_back(Reach());
+            break;
+        case 2:
+            bt_data_->tasks.push_back(Inspection());
+            break;
+        default:
+            bt_data_->tasks.push_back(Task(0));
+            break;
+    }
+
     bt_data_->force_frontier_update = true;
     bt_data_->need_exploration = true;
     bt_data_->active_task = true;

@@ -13,8 +13,13 @@
 #include <exploration_manager/explore.h>
 #include <exploration_manager/check_locomotion_status.h>
 #include <exploration_manager/send_nav_pose.h>
+#include <exploration_manager/acquire_image.h>
+#include <exploration_manager/define_inspection_goals.h>
 
 #include <exploration_manager/is_request_active.h>
+#include <exploration_manager/can_acquire_image.h>
+#include <exploration_manager/is_object_pose_known.h>
+#include <exploration_manager/is_task_inspection.h>
 
 #include <exploration_manager/SharedClass.h>
 
@@ -46,6 +51,9 @@ class ExploratioMain : public rclcpp::Node
         exp_status_msg_.active_task = bt_data_->active_task;
         exp_status_msg_.target_object = bt_data_->object_name;
         exp_status_msg_.location_known = bt_data_->known_object_pose;
+
+        exp_status_msg_.task_id = bt_data_->tasks[bt_data_->current_task].id;
+        exp_status_msg_.images_collected = bt_data_->images_collected;
 
         if(bt_data_->known_object_pose){
             exp_status_msg_.object_target_pos.x = bt_data_->object_pose.transform.translation.x;
@@ -120,6 +128,9 @@ int main(int argc, char * argv[])
 
     //Register BT Nodes
     bt_factory.registerSimpleCondition("IsRequestActive", std::bind(IsRequestActive));
+    bt_factory.registerSimpleCondition("CanAcquireImage", std::bind(CanAcquireImage));
+    bt_factory.registerSimpleCondition("IsTaskInspection", std::bind(IsTaskInspection));
+    bt_factory.registerSimpleCondition("IsObjectPoseKnown", std::bind(IsObjectPoseKnown));
 
     bt_factory.registerNodeType<CheckExplorationRequest>("CheckExplorationRequest", node);
     bt_factory.registerNodeType<CollectObjectPose>("CollectObjectPose", node);
@@ -127,6 +138,8 @@ int main(int argc, char * argv[])
     bt_factory.registerNodeType<Explore>("Explore", node);
     bt_factory.registerNodeType<CheckLocomotionStatus>("CheckLocomotionStatus", node);
     bt_factory.registerNodeType<SendNavPose>("SendNavPose", node);
+    bt_factory.registerNodeType<AcquireImage>("AcquireImage", node);
+    bt_factory.registerNodeType<DefineInspectionGoals>("DefineInspectionGoals", node);
 
     BT::Tree tree = bt_factory.createTreeFromFile(bt_file);
 

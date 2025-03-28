@@ -134,6 +134,11 @@ BT::NodeStatus Explore::tick(){
     
     if(max_frontier_idx_ == -1){
         RCLCPP_WARN(node_->get_logger(), "Explore: Not found! (frontiers: %ld)", bt_data_->frontiers.size());
+
+        bt_data_->active_task = false;
+        bt_data_->need_exploration = true;
+        bt_data_->finished_exploration = false;
+
         return BT::NodeStatus::FAILURE;
     }
 

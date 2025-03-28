@@ -14,6 +14,42 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
 
+
+/*
+  Task ID:  
+      - 1 Find/Reach Object
+      - 2 Inspect Object
+*/
+
+#define INSPECTION_IMAGES 2
+
+class Task{
+  public:
+    Task():
+      id(0)
+    {}
+
+    Task(unsigned int task_id):
+      id(task_id)
+    {}
+    
+    unsigned int id;
+};
+
+class Reach : public Task{
+  public:
+    Reach():
+      Task(1)
+    {}
+};
+
+class Inspection : public Task{
+  public:
+    Inspection():
+      Task(2)
+    {}
+};
+
 class SharedClass
 {
   public:
@@ -28,10 +64,17 @@ class SharedClass
     rclcpp::Time now;
 
     float min_nav_target_distance;
-    bool known_object_pose, force_frontier_update;
+    bool known_object_pose, force_frontier_update, acquire_image;
+
+    std::vector<Task> tasks;
+    
+    int inspection_steps, images_collected;
+    int current_task;
 
     //Constructor
     SharedClass(){
+      tasks = {};
+      current_task = 0;
       object_name = "obj";
       world_frame = "map";
       base_frame = "base_link";
@@ -39,11 +82,14 @@ class SharedClass
       active_task = false;
       need_exploration = false;
       is_driving = false;
+      acquire_image = false;
       finished_exploration = false;
       known_object_pose = false;
       force_frontier_update = false;
+      inspection_steps = 0;
       
       min_nav_target_distance = 0.04f;
+      images_collected = 0;
     }
 };
 

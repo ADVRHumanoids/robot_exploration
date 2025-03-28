@@ -34,6 +34,8 @@ class SendNavPose : public BT::SyncActionNode
     centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Request::SharedPtr candidate_nav_target_req_;
     rclcpp::Client< centauro_ros_nav_srvs::srv::SendCandidateNavTarget>::SharedFuture candidate_nav_target_fut_;
     centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Response::SharedPtr candidate_nav_target_res_;
+
+    double distance_to_object_pose_, angle_;
 };
 
 #endif

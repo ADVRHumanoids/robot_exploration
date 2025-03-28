@@ -51,23 +51,8 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
                      pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2);
 
     if(msg_ == nullptr){
-        //Check if reach target (in that case no more status is published by nav2)
-        if(temp_distance_ < min_nav_target_distance_){
-
-            RCLCPP_INFO(node_->get_logger(), "Nav Target Reached!");
-
-            //If we arrived to the object --> Finish, else change frontier
-            bt_data_->need_exploration = !(bt_data_->known_object_pose);
-            bt_data_->finished_exploration = bt_data_->known_object_pose;
-
-            if(!bt_data_->known_object_pose)
-                bt_data_->force_frontier_update = true;
-
-            if(bt_data_->finished_exploration)
-                return BT::NodeStatus::FAILURE;
-            else
-                return BT::NodeStatus::SUCCESS;
-        }
+        
+        bt_data_->is_driving = false;
         
         return BT::NodeStatus::FAILURE;
     }
@@ -100,10 +85,7 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
                 if(!bt_data_->known_object_pose)
                     bt_data_->force_frontier_update = true;
 
-                if(bt_data_->finished_exploration)
-                    return BT::NodeStatus::FAILURE;
-                else
-                    return BT::NodeStatus::SUCCESS;
+                return BT::NodeStatus::FAILURE;
             }
             else{
                 RCLCPP_INFO(node_->get_logger(), "Locomotion Ended...");                

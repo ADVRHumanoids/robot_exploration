@@ -24,8 +24,12 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         #STATUS TAB
         self.exp_status_text = self.findChild(QtWidgets.QLabel, "exploration_status")
+        self.task_type_text = self.findChild(QtWidgets.QLabel, "task_type")
+
         self.target_object_text = self.findChild(QtWidgets.QLabel, "target_object")
         self.target_location_text = self.findChild(QtWidgets.QLabel, "target_location")
+        self.images_collected_text = self.findChild(QtWidgets.QLabel, "images_collected")
+
 
         self.robot_status_text = self.findChild(QtWidgets.QLabel, "robot_status")
         self.robot_pos_text = self.findChild(QtWidgets.QLabel, "robot_pos")
@@ -44,10 +48,10 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
 
         #Send Goal Button
         self.send_goal_button = self.findChild(QtWidgets.QPushButton, "send_goal_button")
-        self.send_goal_button.clicked.connect(lambda:self.send_goal_button_cb(0))
+        self.send_goal_button.clicked.connect(lambda:self.send_goal_button_cb(1))
         #Inspect
         self.inspect_button = self.findChild(QtWidgets.QPushButton, "inspect_button")
-        self.inspect_button.clicked.connect(lambda:self.send_goal_button_cb(1))
+        self.inspect_button.clicked.connect(lambda:self.send_goal_button_cb(2))
         
         # Parameters
         self.update_objs_needed = True
@@ -99,7 +103,7 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
     def update_object_list_button_cb(self):
         self.update_objs_needed = True
 
-    def send_goal_button_cb(self, task_id=0):
+    def send_goal_button_cb(self, task_id = 0):
         goal_msg = RequestExploration.Goal()
         
         if self.objects_menu_text.currentText() == "Others":
@@ -171,6 +175,15 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
             else:
                 self.exp_status_text.setText("Running")
                 self.exp_status_text.setStyleSheet("QLabel {color : orange; }")
+
+            if self.exploration_status.task_id == 1:
+                self.task_type_text.setText("Find/Reach Object")
+            elif self.exploration_status.task_id == 2:
+                self.task_type_text.setText("Inspect Object")
+            else:
+                self.task_type_text.setText("- - -")
+
+            self.images_collected_text.setText(str(self.exploration_status.images_collected))
 
             temp_string = ""
 
