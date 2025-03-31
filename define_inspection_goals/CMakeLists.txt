@@ -14,6 +14,7 @@ find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(define_inspection_goals_srvs REQUIRED)
 
 include_directories(
   include
@@ -27,6 +28,7 @@ set(dependencies
   geometry_msgs
   nav2_msgs
   visualization_msgs
+  define_inspection_goals_srvs
 )
 
 # frontier 2D
