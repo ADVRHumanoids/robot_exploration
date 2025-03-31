@@ -20,35 +20,35 @@
       - 2 Inspect Object
 */
 
-#define INSPECTION_IMAGES 2
+#define INSPECTION_IMAGES 5
 
 class Task{
   public:
 
     Task(unsigned int task_id = 0, std::string object_name="obj"):
-      id(task_id), object_name(object_name), nav_targets_({}),
+      id(task_id), object_name(object_name), nav_targets({}),
       inspection_steps(0), images_collected(0)
     {}
 
     geometry_msgs::msg::Pose getLastNavTarget(){
       if(inspection_steps < 0 || inspection_steps >= INSPECTION_IMAGES || 
-         inspection_steps > nav_targets_.size())
+         inspection_steps > nav_targets.size())
 
          return geometry_msgs::msg::Pose();
 
-      return nav_targets_[inspection_steps];
+      return nav_targets[inspection_steps];
     }
 
     void addNavTarget(geometry_msgs::msg::Pose nav_target){
-      nav_targets_.push_back(nav_target);
+      nav_targets.push_back(nav_target);
     }
 
     int getNavTargetsNumber(){
-      return static_cast<int>(nav_targets_.size());
+      return static_cast<int>(nav_targets.size());
     }
 
     void clearNavTargets(){
-      nav_targets_.clear();
+      nav_targets.clear();
     }    
     
     unsigned int id;
@@ -56,7 +56,7 @@ class Task{
     int inspection_steps, images_collected;
 
     private:
-      std::vector<geometry_msgs::msg::Pose> nav_targets_;
+      std::vector<geometry_msgs::msg::Pose> nav_targets;
 };
 
 class SharedClass

@@ -29,6 +29,7 @@ find_package(actionlib_msgs REQUIRED)
 find_package(object_detection_srvs REQUIRED)
 find_package(object_detection_msgs REQUIRED)
 find_package(exploration_manager_msgs REQUIRED)
+find_package(define_inspection_goals_srvs REQUIRED)
 
 include_directories(
   include
@@ -53,6 +54,7 @@ set(dependencies
   object_detection_srvs
   object_detection_msgs
   exploration_manager_msgs
+  define_inspection_goals_srvs
 )
 
 # BT Actions-Conditions

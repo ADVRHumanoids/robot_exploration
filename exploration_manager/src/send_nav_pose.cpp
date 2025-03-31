@@ -18,6 +18,7 @@ BT::NodeStatus SendNavPose::tick(){
 
     RCLCPP_INFO(node_->get_logger(), "SendNavPose");
     candidate_nav_target_req_->target_pose.header.frame_id = bt_data_->world_frame;
+    candidate_nav_target_req_->change_orientation = true;
 
     //If exploration phase or task is "reach obj"
     if(bt_data_->need_exploration || bt_data_->tasks[bt_data_->current_task].id == 1){
@@ -53,6 +54,7 @@ BT::NodeStatus SendNavPose::tick(){
             return BT::NodeStatus::FAILURE;
 
         bt_data_->locomotion_target = bt_data_->tasks[bt_data_->current_task].getLastNavTarget();
+        candidate_nav_target_req_->change_orientation = false;
         
         distance_to_nav_target_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x, 2) +
                                   pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y, 2);
@@ -75,8 +77,6 @@ BT::NodeStatus SendNavPose::tick(){
         if(angle_ > 3.14)
             angle_ = 6.28 - angle_;
 
-        RCLCPP_DEBUG(node_->get_logger(), "Angle Diff: %f", angle_);       
-
         //If not driving and close to object, facing it --> acquire image
         if(!bt_data_->is_driving && distance_to_nav_target_ < 0.2*0.2 && angle_ < 0.20){
             bt_data_->acquire_image = true;
@@ -84,9 +84,9 @@ BT::NodeStatus SendNavPose::tick(){
         }
 
         //else move to inspection target
-        RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (distance: %f)", 
+        RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (distance: %f, ang: %f)", 
                                          bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
-                                         distance_to_nav_target_);
+                                         distance_to_nav_target_, angle_);
     }
 
         //If the previous target is almost the same as the new one, do not send again (< 10cm)

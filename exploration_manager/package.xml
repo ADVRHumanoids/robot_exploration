@@ -33,6 +33,7 @@
   <depend>object_detection_msgs</depend>
   <depend>object_detection_srvs</depend>
   <depend>exploration_manager_msgs</depend>
+  <depend>define_inspection_goals_srvs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

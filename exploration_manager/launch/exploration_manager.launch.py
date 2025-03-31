@@ -22,6 +22,7 @@ def generate_launch_description():
     #LaunchConfiguration
     exploration_manager_dir = get_package_share_directory('exploration_manager')
     frontier_extraction_dir = get_package_share_directory('frontier_extraction')
+    def_ins_goal_dir = get_package_share_directory('define_inspection_goals')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     bt_file = LaunchConfiguration('bt_file')
@@ -67,6 +68,14 @@ def generate_launch_description():
         }.items(),
     )
 
+    #Define Inspection Goals node
+    def_ins_goal_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(def_ins_goal_dir, 'launch', 'inspection_goals_server.launch.py')),
+        launch_arguments={
+            'use_sim_time': use_sim_time
+        }.items(),
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -76,5 +85,6 @@ def generate_launch_description():
 
     ld.add_action(exploration_main_cmd)
     ld.add_action(frontier_seg_cmd)
+    ld.add_action(def_ins_goal_cmd)
     
     return ld

@@ -23,7 +23,10 @@ BT::NodeStatus AcquireImage::tick(){
         bt_data_->tasks[bt_data_->current_task].inspection_steps ++;
         bt_data_->tasks[bt_data_->current_task].images_collected ++;
 
-        if(bt_data_->tasks[bt_data_->current_task].inspection_steps >= INSPECTION_IMAGES){
+        //NOTE: For now only the valid poses are considered --> so tasks.size() generally < INSPECTION_IMAGES
+        // if(bt_data_->tasks[bt_data_->current_task].inspection_steps >= INSPECTION_IMAGES){
+        if(bt_data_->tasks[bt_data_->current_task].inspection_steps >= 
+           bt_data_->tasks[bt_data_->current_task].getNavTargetsNumber()){
             RCLCPP_WARN(node_->get_logger(), "AcquireImage: Finished acquisiton!!");
 
             bt_data_->current_task ++;
