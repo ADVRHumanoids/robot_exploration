@@ -63,7 +63,8 @@ namespace inspection_goals{
 
         marker_array_.markers.push_back(marker);
 
-        double ang_resolution = 6.28/static_cast<double>(request->goals_number);
+        double ang_resolution = 0.5;
+        double rotation_to_check_ = 6.28;
         double temp_ang_ = 0.0;
 
         for(int i = 0; i < request->goals_number; i++){
@@ -76,11 +77,16 @@ namespace inspection_goals{
             marker2.scale.x = marker2.scale.y = marker2.scale.z = 0.10;
 
             marker2.color.a = 1.0;
-            marker2.color.r = 1.0;
+            marker2.color.r = 0.2*i;
             marker2.color.b = 0.0;
             marker2.color.g = 0.0;
             
-            temp_ang_ = static_cast<double>(i)*ang_resolution;
+            //Update resolution based on missing area to check and missing targets to find
+            ang_resolution = rotation_to_check_/static_cast<double>(1+request->goals_number-i);
+
+            if(ang_resolution <= 0.10)
+                break;
+
             marker2.pose.position.x = request->object_pos.x + distance_from_obj*cos(temp_ang_);
             marker2.pose.position.y = request->object_pos.y + distance_from_obj*sin(temp_ang_);
             marker2.pose.position.z = 0.05;
@@ -90,13 +96,23 @@ namespace inspection_goals{
             
             //Define Pose
             temp_pose_.position = marker2.pose.position;
-            if(!isObjInLos(request->object_pos, temp_pose_.position))
+            if(!isObjInLos(request->object_pos, temp_pose_.position)){
+                i--;
+                //If NOT successfull --> scale a portion of ang_resolution
+                rotation_to_check_ -= ang_resolution*0.20;
+                temp_ang_ += ang_resolution*0.20;
                 continue;
-            
-            if(temp_ang_ > 0)
-                temp_ang_ -= 3.14;
-            else
-                temp_ang_ += 3.14;
+            }
+
+            //If successfull --> scale ang_resolution
+            rotation_to_check_ -= ang_resolution;
+            temp_ang_ += ang_resolution;
+            RCLCPP_INFO(this->get_logger(), "Ang: %f, res: %f, rot_check:%f, i:%d", temp_ang_, ang_resolution, rotation_to_check_, i);
+
+            // if(temp_ang_ > 0)
+            //     temp_ang_ -= 3.14;
+            // else
+            //     temp_ang_ += 3.14;
 
             temp_pose_.orientation.z = sin(0.5*temp_ang_);
             temp_pose_.orientation.w = cos(0.5*temp_ang_);
@@ -105,6 +121,8 @@ namespace inspection_goals{
             
             marker_array_.markers.push_back(marker2);
         }
+
+        //TODO: Order to targets to minimize execution time
 
         marker_pub_->publish(marker_array_);
     }
@@ -141,8 +159,13 @@ namespace inspection_goals{
         }
 
         //To avoid every time abs
-        to_move_x_ = abs(to_move_x_) - static_cast<int>(0.6/occupancy_->info.resolution);
-        to_move_y_ = abs(to_move_y_) - static_cast<int>(0.6/occupancy_->info.resolution);
+        to_move_x_ = abs(to_move_x_) - static_cast<int>(0.5/occupancy_->info.resolution);
+        to_move_y_ = abs(to_move_y_) - static_cast<int>(0.5/occupancy_->info.resolution);
+
+        if(to_move_x_ < 1)
+            to_move_x_ = 1;
+        if(to_move_y_ < 1)
+            to_move_y_ = 1;
 
         to_move_x_doub_ = 0.0;
         to_move_y_doub_ = 0.0;
