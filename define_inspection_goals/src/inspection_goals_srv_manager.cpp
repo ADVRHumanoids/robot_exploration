@@ -36,7 +36,7 @@ namespace inspection_goals{
         if(occupancy_ == nullptr)
             return ;
 
-        double distance_from_obj = 1.2;
+        double distance_from_obj = 1.35;
     
         marker_array_.markers.clear();
 
@@ -63,9 +63,9 @@ namespace inspection_goals{
 
         marker_array_.markers.push_back(marker);
 
-        double ang_resolution = 0.5;
-        double rotation_to_check_ = 6.28;
-        double temp_ang_ = 0.0;
+        ang_resolution = 0.5;
+        rotation_to_check_ = 6.28;
+        temp_ang_ = 0.0;
 
         for(int i = 0; i < request->goals_number; i++){
             visualization_msgs::msg::Marker marker2;
@@ -103,26 +103,20 @@ namespace inspection_goals{
                 temp_ang_ += ang_resolution*0.20;
                 continue;
             }
+           
+            temp_pose_.orientation.z = sin(0.5*(temp_ang_+3.14));
+            temp_pose_.orientation.w = cos(0.5*(temp_ang_+3.14));
 
             //If successfull --> scale ang_resolution
             rotation_to_check_ -= ang_resolution;
             temp_ang_ += ang_resolution;
-            RCLCPP_INFO(this->get_logger(), "Ang: %f, res: %f, rot_check:%f, i:%d", temp_ang_, ang_resolution, rotation_to_check_, i);
-
-            // if(temp_ang_ > 0)
-            //     temp_ang_ -= 3.14;
-            // else
-            //     temp_ang_ += 3.14;
-
-            temp_pose_.orientation.z = sin(0.5*temp_ang_);
-            temp_pose_.orientation.w = cos(0.5*temp_ang_);
-
+            
             response->poses.push_back(temp_pose_);
             
             marker_array_.markers.push_back(marker2);
         }
 
-        //TODO: Order to targets to minimize execution time
+        //TODO: Order the targets to minimize execution time
 
         marker_pub_->publish(marker_array_);
     }
@@ -130,7 +124,7 @@ namespace inspection_goals{
     bool InspectionGoalsSrvManager::isGridCellFree(const int id, const int th) const
     {
         return id >= 0 && id < occupancy_->info.width*occupancy_->info.height && 
-               occupancy_->data[id] <= th;
+               static_cast<int>(occupancy_->data[id]) <= th;
     }
 
     bool InspectionGoalsSrvManager::isObjInLos(const geometry_msgs::msg::Point& obj,
@@ -143,7 +137,8 @@ namespace inspection_goals{
         robot_pos_ = static_cast<int>((cand_robot.x - occupancy_->info.origin.position.x)/occupancy_->info.resolution) +
                      static_cast<int>((cand_robot.y - occupancy_->info.origin.position.y)/occupancy_->info.resolution)*occupancy_->info.width;
         
-        if(!isGridCellFree(robot_pos_, 80))
+        RCLCPP_DEBUG(this->get_logger(), "Cost at: %f %f  --> %d", cand_robot.x, cand_robot.y, static_cast<int>(occupancy_->data[robot_pos_]));
+        if(!isGridCellFree(robot_pos_, 0))
             return false;
 
         to_move_x_ = obj_pos_%occupancy_->info.width - robot_pos_%occupancy_->info.width;
@@ -159,13 +154,13 @@ namespace inspection_goals{
         }
 
         //To avoid every time abs
-        to_move_x_ = abs(to_move_x_) - static_cast<int>(0.5/occupancy_->info.resolution);
-        to_move_y_ = abs(to_move_y_) - static_cast<int>(0.5/occupancy_->info.resolution);
+        to_move_x_ = abs(to_move_x_) - static_cast<int>(0.75/occupancy_->info.resolution);
+        to_move_y_ = abs(to_move_y_) - static_cast<int>(0.75/occupancy_->info.resolution);
 
-        if(to_move_x_ < 1)
-            to_move_x_ = 1;
-        if(to_move_y_ < 1)
-            to_move_y_ = 1;
+        if(to_move_x_ < 0)
+            to_move_x_ = 0;
+        if(to_move_y_ < 0)
+            to_move_y_ = 0;
 
         to_move_x_doub_ = 0.0;
         to_move_y_doub_ = 0.0;

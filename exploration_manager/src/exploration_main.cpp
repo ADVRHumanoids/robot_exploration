@@ -25,13 +25,7 @@
 
 #include "exploration_manager_msgs/msg/exploration_status.hpp"
 
-#include "tf2/exceptions.h"
-#include "tf2_eigen/tf2_eigen.hpp"
-#include "tf2_ros/transform_listener.h"
-#include "tf2_ros/buffer.h"
-
 SharedClass *bt_data_ = new SharedClass();
-
 
 using namespace std::chrono_literals;
 
@@ -40,9 +34,9 @@ class ExploratioMain : public rclcpp::Node
   public:
     ExploratioMain()
     : Node("exploration_main")
-    {
+    {        
         exp_status_pub_ = this->create_publisher<exploration_manager_msgs::msg::ExplorationStatus>("/exploration_status", 10);
-        timer_ = this->create_wall_timer(500ms, std::bind(&ExploratioMain::main_loop, this));
+        timer_ = this->create_wall_timer(100ms, std::bind(&ExploratioMain::main_loop, this));
     }
 
   private:
@@ -82,7 +76,7 @@ class ExploratioMain : public rclcpp::Node
         exp_status_msg_.robot_pos.z = bt_data_->last_robot_pose.transform.translation.z;
 
         exp_status_msg_.frontiers_number = bt_data_->frontiers.size();
-        exp_status_msg_.finished = bt_data_->finished_exploration;
+        exp_status_msg_.finished = !bt_data_->active_task;
 
         exp_status_pub_->publish(exp_status_msg_);
     }

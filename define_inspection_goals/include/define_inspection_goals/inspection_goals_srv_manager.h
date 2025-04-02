@@ -34,6 +34,8 @@ namespace inspection_goals{
         double increment_x_, increment_y_;
         double to_move_x_doub_, to_move_y_doub_;
 
+        double ang_resolution, rotation_to_check_, temp_ang_;
+
 
         // ----- Private Methods ----
         void initNode();
@@ -45,7 +47,7 @@ namespace inspection_goals{
         bool isObjInLos(const geometry_msgs::msg::Point& obj,
                         const geometry_msgs::msg::Point cand_robot);
 
-        bool isGridCellFree(const int id, const int th=98) const;
+        bool isGridCellFree(const int id, const int th=97) const;
     
     };
 }

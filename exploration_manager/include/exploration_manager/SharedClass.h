@@ -14,6 +14,8 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
 
+#include "rclcpp/rclcpp.hpp"
+
 /*
   Task ID:  
       - 1 Find/Reach Object
@@ -31,9 +33,7 @@ class Task{
     {}
 
     geometry_msgs::msg::Pose getLastNavTarget(){
-      if(inspection_steps < 0 || inspection_steps >= INSPECTION_IMAGES || 
-         inspection_steps > nav_targets.size())
-
+      if(inspection_steps < 0 || inspection_steps >= static_cast<int>(nav_targets.size()))
          return geometry_msgs::msg::Pose();
 
       return nav_targets[inspection_steps];
@@ -49,6 +49,7 @@ class Task{
 
     void clearNavTargets(){
       nav_targets.clear();
+      inspection_steps = 0;
     }    
     
     unsigned int id;

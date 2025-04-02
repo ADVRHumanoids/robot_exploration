@@ -12,13 +12,17 @@ SendNavPose::SendNavPose(const std::string& name,
 
     node_->declare_parameter("robot_exploration.distance_to_object_pose", 0.85);
     distance_to_object_pose_ = node_->get_parameter("robot_exploration.distance_to_object_pose").as_double();
+
+    updated_nav_ = false;
 }
 
 BT::NodeStatus SendNavPose::tick(){
 
-    RCLCPP_INFO(node_->get_logger(), "SendNavPose");
-    candidate_nav_target_req_->target_pose.header.frame_id = bt_data_->world_frame;
+    RCLCPP_DEBUG(node_->get_logger(), "SendNavPose");
+    candidate_nav_target_req_->reference_frame = bt_data_->world_frame;
     candidate_nav_target_req_->change_orientation = true;
+
+    //1. Update the intermediate target (based on the task)
 
     //If exploration phase or task is "reach obj"
     if(bt_data_->need_exploration || bt_data_->tasks[bt_data_->current_task].id == 1){
@@ -49,27 +53,41 @@ BT::NodeStatus SendNavPose::tick(){
     }
     else if(bt_data_->tasks[bt_data_->current_task].id == 2){ //Inspection Task
 
-        // If not already defined the targets --> Return failure    
+        // If not already defined the targets --> Return failure
         if(bt_data_->tasks[bt_data_->current_task].getNavTargetsNumber() == 0)
             return BT::NodeStatus::FAILURE;
+        
+        //Update locomotion_target if new goal is acquired
+        temp_nav_pose_ = bt_data_->tasks[bt_data_->current_task].getLastNavTarget();
 
-        bt_data_->locomotion_target = bt_data_->tasks[bt_data_->current_task].getLastNavTarget();
+        if(temp_nav_pose_ != candidate_nav_target_req_->target_pose){
+            RCLCPP_INFO(node_->get_logger(), "New goal: %f %f --> %f %f", candidate_nav_target_req_->target_pose.position.x,
+                                                                            candidate_nav_target_req_->target_pose.position.y,
+                                                                            temp_nav_pose_.position.x,
+                                                                            temp_nav_pose_.position.y);
+            bt_data_->locomotion_target = temp_nav_pose_;
+            updated_nav_ = true;
+        }
+        
         candidate_nav_target_req_->change_orientation = false;
         
+        //Compute distance to previous nav target
         distance_to_nav_target_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x, 2) +
                                   pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y, 2);
 
         //yaw_error        
-        angle_ = atan2(2.0*(bt_data_->last_robot_pose.transform.rotation.x*bt_data_->last_robot_pose.transform.rotation.y +
-                            bt_data_->locomotion_target.orientation.w*bt_data_->last_robot_pose.transform.rotation.z),
-                       1.0 - 2.0*(bt_data_->last_robot_pose.transform.rotation.y*bt_data_->last_robot_pose.transform.rotation.y +
-                                  bt_data_->last_robot_pose.transform.rotation.z*bt_data_->last_robot_pose.transform.rotation.z));
+        float rob_yaw = atan2(2.0*(bt_data_->last_robot_pose.transform.rotation.x*bt_data_->last_robot_pose.transform.rotation.y +
+                                    bt_data_->last_robot_pose.transform.rotation.w*bt_data_->last_robot_pose.transform.rotation.z),
+                            1.0 - 2.0*(bt_data_->last_robot_pose.transform.rotation.y*bt_data_->last_robot_pose.transform.rotation.y +
+                                        bt_data_->last_robot_pose.transform.rotation.z*bt_data_->last_robot_pose.transform.rotation.z));
 
-        angle_ -= atan2(2.0*(bt_data_->locomotion_target.orientation.x*bt_data_->locomotion_target.orientation.y + 
-                             bt_data_->locomotion_target.orientation.w*bt_data_->locomotion_target.orientation.z),
-                        1.0 - 2.0*(bt_data_->locomotion_target.orientation.y*bt_data_->locomotion_target.orientation.y + 
-                                   bt_data_->locomotion_target.orientation.z*bt_data_->locomotion_target.orientation.z));
+        float nav_yaw = atan2(2.0*(bt_data_->locomotion_target.orientation.x*bt_data_->locomotion_target.orientation.y + 
+                                    bt_data_->locomotion_target.orientation.w*bt_data_->locomotion_target.orientation.z),
+                                1.0 - 2.0*(bt_data_->locomotion_target.orientation.y*bt_data_->locomotion_target.orientation.y + 
+                                        bt_data_->locomotion_target.orientation.z*bt_data_->locomotion_target.orientation.z));
 
+        angle_ = nav_yaw - rob_yaw;
+        
         angle_ = fabs(angle_);
         if(angle_ > 6.28)
             angle_ -= 6.28;
@@ -78,31 +96,34 @@ BT::NodeStatus SendNavPose::tick(){
             angle_ = 6.28 - angle_;
 
         //If not driving and close to object, facing it --> acquire image
-        if(!bt_data_->is_driving && distance_to_nav_target_ < 0.2*0.2 && angle_ < 0.20){
+        if(!bt_data_->is_driving && distance_to_nav_target_ < 0.25*0.25 && angle_ < 0.20){
+            RCLCPP_INFO(node_->get_logger(), "Inspection Target Reached");
             bt_data_->acquire_image = true;
             return BT::NodeStatus::FAILURE;
         }
 
         //else move to inspection target
-        RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (distance: %f, ang: %f)", 
-                                         bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
-                                         distance_to_nav_target_, angle_);
-    }
+        if(!bt_data_->is_driving)
+            RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (sqr distance: %f, AngR: %f, AngT: %f)", 
+                                            bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
+                                            distance_to_nav_target_, rob_yaw, nav_yaw);
 
         //If the previous target is almost the same as the new one, do not send again (< 10cm)
-    if(//bt_data_->is_driving && //!bt_data_->force_frontier_update && 
-       pow(candidate_nav_target_req_->target_pose.pose.position.x - bt_data_->locomotion_target.position.x, 2) +
-       pow(candidate_nav_target_req_->target_pose.pose.position.y - bt_data_->locomotion_target.position.y, 2) < 0.01f){
-            return BT::NodeStatus::FAILURE;
+        if(//bt_data_->is_driving && //!bt_data_->force_frontier_update && 
+            pow(candidate_nav_target_req_->target_pose.position.x - bt_data_->locomotion_target.position.x, 2) +
+            pow(candidate_nav_target_req_->target_pose.position.y - bt_data_->locomotion_target.position.y, 2) < 0.01f){
+                return BT::NodeStatus::FAILURE;
+        }
     }
+
     // bt_data_->force_frontier_update = true; //Force frontiers updates evertime you change nav target
     
     //Set nav target and send to Nav2
-    candidate_nav_target_req_->target_pose.pose = bt_data_->locomotion_target;
+    candidate_nav_target_req_->target_pose = bt_data_->locomotion_target;
 
     RCLCPP_INFO(node_->get_logger(), "Send robot to: %f %f", 
-                candidate_nav_target_req_->target_pose.pose.position.x,
-                candidate_nav_target_req_->target_pose.pose.position.y);
+                candidate_nav_target_req_->target_pose.position.x,
+                candidate_nav_target_req_->target_pose.position.y);
         
     //Set robot pose
     candidate_nav_target_req_->robot_pose.position.x = bt_data_->last_robot_pose.transform.translation.x;
@@ -114,12 +135,19 @@ BT::NodeStatus SendNavPose::tick(){
     candidate_nav_target_req_->robot_pose.orientation.z = bt_data_->last_robot_pose.transform.rotation.z;
     candidate_nav_target_req_->robot_pose.orientation.w = bt_data_->last_robot_pose.transform.rotation.w;
 
-    candidate_nav_target_fut_ = send_candidate_nav_target_->async_send_request(candidate_nav_target_req_);
+    candidate_nav_target_fut_ = send_candidate_nav_target_->async_send_request(candidate_nav_target_req_).share();
     candidate_nav_target_res_ = candidate_nav_target_fut_.get(); // Blocking call
 
-    if(candidate_nav_target_res_)
+    if(candidate_nav_target_res_ != nullptr)
     {
-        bt_data_->is_driving = true;
+        bt_data_->locomotion_target = candidate_nav_target_res_->new_target;
+        // bt_data_->is_driving = true;
+        updated_nav_ = false;
+
+        RCLCPP_INFO(node_->get_logger(), "Update target to: %f %f", 
+                    bt_data_->locomotion_target.position.x,
+                    bt_data_->locomotion_target.position.y);
+                    
         return BT::NodeStatus::SUCCESS;
     }
 

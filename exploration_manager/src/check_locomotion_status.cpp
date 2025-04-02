@@ -22,13 +22,14 @@ CheckLocomotionStatus::CheckLocomotionStatus(const std::string& name,
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
-      nav_status_sub_ = node_->create_subscription<actionlib_msgs::msg::GoalStatusArray>(
+    nav_status_sub_ = node_->create_subscription<action_msgs::msg::GoalStatusArray>(
         "/navigate_to_pose/_action/status", 10, std::bind(&CheckLocomotionStatus::getNavStatus, this, _1));
+
+    prev_status_msg_.status = GoalStatus::STATUS_UNKNOWN;
 }
 
-void CheckLocomotionStatus::getNavStatus(const actionlib_msgs::msg::GoalStatusArray::SharedPtr msg){
-    msg_ = msg;
+void CheckLocomotionStatus::getNavStatus(const action_msgs::msg::GoalStatusArray::SharedPtr msg){
+    status_msg_ = msg;
 }
 
 //Check if Ros Nav succeed and also that the robot is "close enough" to desired location
@@ -50,26 +51,30 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
     temp_distance_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
                      pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2);
 
-    if(msg_ == nullptr){
-        
+    //If no message --> presume not driving and start of execution
+    if(status_msg_ == nullptr){
         bt_data_->is_driving = false;
         
         return BT::NodeStatus::FAILURE;
     }
 
-    status_msg_id_ = msg_->status_list.size() - 1;
+    status_msg_id_ = status_msg_->status_list.size() - 1;
 
     // Consider the last in status_list
     if(status_msg_id_ >= 0){
-        
+
+        if(status_msg_->status_list[status_msg_id_].status == GoalStatus::STATUS_ACCEPTED){
+            //NOTE: Accepted and waiting execution
+        }
         // If Exploring and close to nav target (frontier)
-        if(!bt_data_->known_object_pose && msg_->status_list[status_msg_id_].status == GoalStatus::ACTIVE &&
+        else if(!bt_data_->known_object_pose && status_msg_->status_list[status_msg_id_].status == GoalStatus::STATUS_EXECUTING &&
             (temp_distance_ < min_frontier_distance_))
         {
+            bt_data_->is_driving = true;
             RCLCPP_INFO(node_->get_logger(), "Force Frontier Update");
             bt_data_->force_frontier_update = true;
         }
-        else if(msg_->status_list[status_msg_id_].status == GoalStatus::SUCCEEDED){                
+        else if(status_msg_->status_list[status_msg_id_].status == GoalStatus::STATUS_SUCCEEDED){         
             bt_data_->is_driving = false;
             // bt_data_->finished_exploration = true;
             
@@ -84,30 +89,27 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
 
                 if(!bt_data_->known_object_pose)
                     bt_data_->force_frontier_update = true;
-
-                return BT::NodeStatus::FAILURE;
             }
-            else{
-                RCLCPP_INFO(node_->get_logger(), "Locomotion Ended...");                
-            }
+            // else{
+            //     RCLCPP_INFO(node_->get_logger(), "Locomotion Ended...");                
+            // }
         }
-        else if(msg_->status_list[status_msg_id_].status == GoalStatus::ABORTED){
+        else if(status_msg_->status_list[status_msg_id_].status == GoalStatus::STATUS_ABORTED){
             RCLCPP_INFO(node_->get_logger(), "Locomotion Aborted...");  
             bt_data_->is_driving = false;
             bt_data_->need_exploration = true;
             bt_data_->finished_exploration = false;
         }
-        else if(msg_->status_list[status_msg_id_].status == GoalStatus::REJECTED ||
-                msg_->status_list[status_msg_id_].status == GoalStatus::PREEMPTING){
-            RCLCPP_INFO(node_->get_logger(), "Nav2 REJECTED or PREEMPTING");
-            RCLCPP_INFO(node_->get_logger(), "TODO: MANAGE THIS!!");
-
-            //TODO: MANAGE THIS!!
+        else if(status_msg_->status_list[status_msg_id_].status == GoalStatus::STATUS_EXECUTING){
+            bt_data_->is_driving = true;
         }
         else{
             RCLCPP_INFO(node_->get_logger(), "Not previous cases in locomotion...");
         }
     }
+    // else{
+    //     prev_status_msg_.status = GoalStatus::STATUS_UNKNOWN;
+    // }
 
     return BT::NodeStatus::FAILURE;
 }

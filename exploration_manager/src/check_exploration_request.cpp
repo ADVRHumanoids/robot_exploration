@@ -57,7 +57,7 @@ BT::NodeStatus CheckExplorationRequest::tick(){
         // action_result_->found = false;
         // action_goal_handle_->canceled(action_result_);
         RCLCPP_INFO(node_->get_logger(), "Goal canceled - Stop Robot Nav");
-        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);    
+        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);   
         bt_data_->is_driving = false;
 
         resetState();

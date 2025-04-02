@@ -24,7 +24,7 @@ DefineInspectionGoals::DefineInspectionGoals(const std::string& name,
 BT::NodeStatus DefineInspectionGoals::tick(){
     // RCLCPP_INFO(node_->get_logger(), "DefineInspectionGoals");
             
-    if(bt_data_->tasks[bt_data_->current_task].getNavTargetsNumber() < INSPECTION_IMAGES){
+    if(bt_data_->tasks[bt_data_->current_task].getNavTargetsNumber() == 0){
         bt_data_->tasks[bt_data_->current_task].clearNavTargets();
 
         if(service_available_){
@@ -32,15 +32,15 @@ BT::NodeStatus DefineInspectionGoals::tick(){
             get_insp_goals_req_->object_pos.y = bt_data_->object_pose.transform.translation.y;
             get_insp_goals_req_->object_pos.z = bt_data_->object_pose.transform.translation.z;
 
-            get_insp_goals_fut_ = get_insp_goals_srv_->async_send_request(get_insp_goals_req_);
+            get_insp_goals_fut_ = get_insp_goals_srv_->async_send_request(get_insp_goals_req_).share();
             get_insp_goals_res_ = get_insp_goals_fut_.get(); // Blocking call
+
+            if (!get_insp_goals_res_)
+                return BT::NodeStatus::FAILURE;
+
+            for(auto p : get_insp_goals_res_->poses)
+                bt_data_->tasks[bt_data_->current_task].addNavTarget(p);
         }
-
-        if (!get_insp_goals_res_)
-            return BT::NodeStatus::FAILURE;
-
-        for(auto p : get_insp_goals_res_->poses)
-            bt_data_->tasks[bt_data_->current_task].addNavTarget(p);
     }
     
     return BT::NodeStatus::SUCCESS;

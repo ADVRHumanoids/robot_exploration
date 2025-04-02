@@ -26,7 +26,7 @@ BT::NodeStatus CollectObjectPose::tick(){
         return BT::NodeStatus::FAILURE;
 
     if(service_available_){
-        get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_);
+        get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_).share();
         get_objects_res_ = get_objects_fut_.get(); // Blocking call
     }
 

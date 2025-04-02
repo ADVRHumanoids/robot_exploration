@@ -13,10 +13,10 @@ AcquireImage::AcquireImage(const std::string& name,
 BT::NodeStatus AcquireImage::tick(){
     RCLCPP_INFO(node_->get_logger(), "AcquireImage");
    
-    acquire_image_fut_ = acquire_image_srv_->async_send_request(acquire_image_req_);
+    acquire_image_fut_ = acquire_image_srv_->async_send_request(acquire_image_req_).share();
     acquire_image_res_ = acquire_image_fut_.get(); // Blocking call
 
-    if(acquire_image_res_)
+    if(acquire_image_res_ != nullptr)
     {
         bt_data_->acquire_image = false;
 

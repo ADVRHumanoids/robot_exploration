@@ -25,6 +25,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(actionlib_msgs REQUIRED)
 find_package(object_detection_srvs REQUIRED)
 find_package(object_detection_msgs REQUIRED)
@@ -50,6 +51,7 @@ set(dependencies
   tf2_ros
   tf2_eigen
   nav2_msgs
+  action_msgs
   actionlib_msgs
   object_detection_srvs
   object_detection_msgs
