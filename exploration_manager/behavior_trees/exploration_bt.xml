@@ -6,32 +6,46 @@
             <ForceFailure>
                 <Sequence>
                     <Action ID="CheckExplorationRequest"/>
+                    <Fallback name="ImageAcquisition">
+                        <Inverter>
+                            <Condition ID="CanAcquireImage"/>
+                        </Inverter>
+                        <Action ID="AcquireImage"/>
+                    </Fallback>
                     <Condition ID="IsRequestActive"/>
-                    <Sequence name="LocomotionToTarget">
-                        <Fallback name="DefineNavTarget">
-                            <Action ID="CollectObjectPose"/>
-                            <Sequence name="Explore">
-                                <Action ID="CollectFrontiers"/>
-                                <Action ID="Explore"/>
-                            </Sequence>
-                        </Fallback>
-                        <Fallback name="DriveToTarget">
-                            <Action ID="CheckLocomotionStatus"/>
-                            <Action ID="SendNavPose"/>
-                        </Fallback>
-                    </Sequence>
+                    <Fallback name="DefineNavTarget">
+                        <Sequence>
+                            <Condition ID="IsTaskInspection"/>
+                            <Condition ID="IsObjectPoseKnown"/>
+                            <Action ID="DefineInspectionGoals"/>
+                        </Sequence>
+                        <Action ID="CollectObjectPose"/>
+                        <Sequence name="Explore">
+                            <Action ID="CollectFrontiers"/>
+                            <Action ID="Explore"/>
+                        </Sequence>
+                    </Fallback>
+                    <Fallback name="DriveToTarget">
+                        <Action ID="CheckLocomotionStatus"/>
+                        <Action ID="SendNavPose"/>
+                    </Fallback>
                 </Sequence>
             </ForceFailure>
         </RetryUntilSuccessful>
     </BehaviorTree>
     <!-- ////////// -->
     <TreeNodesModel>
+        <Action ID="AcquireImage"/>
+        <Condition ID="CanAcquireImage"/>
+        <Action ID="CheckExplorationRequest"/>
         <Action ID="CheckLocomotionStatus"/>
         <Action ID="CollectFrontiers"/>
+        <Action ID="DefineInspectionGoals"/>
         <Action ID="CollectObjectPose"/>
         <Action ID="Explore"/>
-        <Action ID="CheckExplorationRequest"/>
+        <Condition ID="IsObjectPoseKnown"/>
         <Condition ID="IsRequestActive"/>
+        <Condition ID="IsTaskInspection"/>
         <Action ID="SendNavPose"/>
     </TreeNodesModel>
     <!-- ////////// -->

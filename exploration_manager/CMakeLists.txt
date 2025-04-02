@@ -25,10 +25,12 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(actionlib_msgs REQUIRED)
 find_package(object_detection_srvs REQUIRED)
 find_package(object_detection_msgs REQUIRED)
 find_package(exploration_manager_msgs REQUIRED)
+find_package(define_inspection_goals_srvs REQUIRED)
 
 include_directories(
   include
@@ -39,6 +41,7 @@ set(dependencies
   rclcpp_lifecycle
   std_msgs
   geometry_msgs
+  std_srvs
   exploration_manager_actions
   frontier_extraction_msgs
   frontier_extraction_srvs
@@ -48,10 +51,12 @@ set(dependencies
   tf2_ros
   tf2_eigen
   nav2_msgs
+  action_msgs
   actionlib_msgs
   object_detection_srvs
   object_detection_msgs
   exploration_manager_msgs
+  define_inspection_goals_srvs
 )
 
 # BT Actions-Conditions
@@ -63,6 +68,11 @@ add_library(bt_nodes SHARED
   src/explore.cpp
   src/check_locomotion_status.cpp
   src/send_nav_pose.cpp
+  src/can_acquire_image.cpp
+  src/acquire_image.cpp
+  src/is_object_pose_known.cpp
+  src/is_task_inspection.cpp
+  src/define_inspection_goals.cpp
 )
 
 ament_target_dependencies(bt_nodes

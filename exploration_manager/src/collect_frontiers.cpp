@@ -59,7 +59,7 @@ BT::NodeStatus CollectFrontiers::tick(){
         get_frontiers_req_->robot_pose.y = bt_data_->last_robot_pose.transform.translation.y;
         get_frontiers_req_->robot_pose.z = bt_data_->last_robot_pose.transform.translation.z;
     
-        get_frontiers_fut_ = frontier_extract_srv_->async_send_request(get_frontiers_req_);
+        get_frontiers_fut_ = frontier_extract_srv_->async_send_request(get_frontiers_req_).share();
         get_frontiers_res_ = get_frontiers_fut_.get(); // Blocking call
 
         if (get_frontiers_res_){

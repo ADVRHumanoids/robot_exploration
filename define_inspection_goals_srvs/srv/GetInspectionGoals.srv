@@ -1,0 +1,4 @@
+uint8 goals_number
+geometry_msgs/Point object_pos
+---
+geometry_msgs/Pose[] poses

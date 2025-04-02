@@ -29,10 +29,12 @@
   <depend>tf2_ros</depend>
   <depend>tf2_eigen</depend>
   <depend>nav2_msgs</depend>
+  <depend>action_msgs</depend>
   <depend>actionlib_msgs</depend>
   <depend>object_detection_msgs</depend>
   <depend>object_detection_srvs</depend>
   <depend>exploration_manager_msgs</depend>
+  <depend>define_inspection_goals_srvs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

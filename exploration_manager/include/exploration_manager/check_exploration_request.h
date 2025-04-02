@@ -42,9 +42,9 @@ class CheckExplorationRequest : public BT::SyncActionNode
     RequestExploration::Feedback::SharedPtr action_feedback_;
 
     std::shared_ptr<GoalHandleRequestExploration> action_goal_handle_;
-    
+
     rclcpp::Client<action_msgs::srv::CancelGoal>::SharedPtr cancel_nav_goal_srv_;
-    action_msgs::srv::CancelGoal::Request::SharedPtr cancel_nav_goal_req_;
+    action_msgs::srv::CancelGoal::Request::SharedPtr cancel_nav_goal_req_;    
 
     rclcpp_action::GoalResponse handle_goal(
       const rclcpp_action::GoalUUID & uuid,

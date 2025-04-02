@@ -4,7 +4,6 @@
 #include "behaviortree_cpp/action_node.h"
 #include "behaviortree_cpp/behavior_tree.h"
 #include "behaviortree_cpp/bt_factory.h"
-
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -14,7 +13,6 @@
 #include "frontier_extraction_srvs/srv/get_frontiers.hpp"
 
 #include "nav2_msgs/action/navigate_to_pose.hpp"
-
 #include "tf2/exceptions.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
@@ -50,7 +48,6 @@ class CollectFrontiers : public BT::SyncActionNode
 
     //Nav2 Action Client
     rclcpp_action::Client<NavigateToPose>::SharedPtr nav2_client_ptr_;
-
     //Timer
     rclcpp::Time now_, prev_time_;
     float time_diff_;

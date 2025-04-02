@@ -13,20 +13,19 @@
 #include <exploration_manager/explore.h>
 #include <exploration_manager/check_locomotion_status.h>
 #include <exploration_manager/send_nav_pose.h>
+#include <exploration_manager/acquire_image.h>
+#include <exploration_manager/define_inspection_goals.h>
 
 #include <exploration_manager/is_request_active.h>
+#include <exploration_manager/can_acquire_image.h>
+#include <exploration_manager/is_object_pose_known.h>
+#include <exploration_manager/is_task_inspection.h>
 
 #include <exploration_manager/SharedClass.h>
 
 #include "exploration_manager_msgs/msg/exploration_status.hpp"
 
-#include "tf2/exceptions.h"
-#include "tf2_eigen/tf2_eigen.hpp"
-#include "tf2_ros/transform_listener.h"
-#include "tf2_ros/buffer.h"
-
 SharedClass *bt_data_ = new SharedClass();
-
 
 using namespace std::chrono_literals;
 
@@ -35,17 +34,27 @@ class ExploratioMain : public rclcpp::Node
   public:
     ExploratioMain()
     : Node("exploration_main")
-    {
+    {        
         exp_status_pub_ = this->create_publisher<exploration_manager_msgs::msg::ExplorationStatus>("/exploration_status", 10);
-        timer_ = this->create_wall_timer(500ms, std::bind(&ExploratioMain::main_loop, this));
+        timer_ = this->create_wall_timer(100ms, std::bind(&ExploratioMain::main_loop, this));
     }
 
   private:
     void main_loop()
     {
         exp_status_msg_.active_task = bt_data_->active_task;
-        exp_status_msg_.target_object = bt_data_->object_name;
         exp_status_msg_.location_known = bt_data_->known_object_pose;
+
+        if(bt_data_->current_task >= 0 && bt_data_->current_task < static_cast<int>(bt_data_->tasks.size())){
+            exp_status_msg_.task_id = bt_data_->tasks[bt_data_->current_task].id;
+            exp_status_msg_.target_object = bt_data_->tasks[bt_data_->current_task].object_name;
+            exp_status_msg_.images_collected = bt_data_->tasks[bt_data_->current_task].images_collected;
+        }
+        else{
+            exp_status_msg_.task_id = 0;
+            exp_status_msg_.target_object = "-";
+            exp_status_msg_.images_collected = 0;
+        }
 
         if(bt_data_->known_object_pose){
             exp_status_msg_.object_target_pos.x = bt_data_->object_pose.transform.translation.x;
@@ -67,7 +76,7 @@ class ExploratioMain : public rclcpp::Node
         exp_status_msg_.robot_pos.z = bt_data_->last_robot_pose.transform.translation.z;
 
         exp_status_msg_.frontiers_number = bt_data_->frontiers.size();
-        exp_status_msg_.finished = bt_data_->finished_exploration;
+        exp_status_msg_.finished = !bt_data_->active_task;
 
         exp_status_pub_->publish(exp_status_msg_);
     }
@@ -113,13 +122,17 @@ int main(int argc, char * argv[])
                                             bt_data_->world_frame, bt_data_->base_frame,
                                             bt_data_->now);
     } catch (const tf2::TransformException & ex) {
-        RCLCPP_WARN(node->get_logger(), "Could not transform!");
+        RCLCPP_WARN(node->get_logger(), "Could not transform from %s to %s!", bt_data_->world_frame.c_str(),
+                                                                              bt_data_->base_frame.c_str());
     }
 
     BT::BehaviorTreeFactory bt_factory;
 
     //Register BT Nodes
     bt_factory.registerSimpleCondition("IsRequestActive", std::bind(IsRequestActive));
+    bt_factory.registerSimpleCondition("CanAcquireImage", std::bind(CanAcquireImage));
+    bt_factory.registerSimpleCondition("IsTaskInspection", std::bind(IsTaskInspection));
+    bt_factory.registerSimpleCondition("IsObjectPoseKnown", std::bind(IsObjectPoseKnown));
 
     bt_factory.registerNodeType<CheckExplorationRequest>("CheckExplorationRequest", node);
     bt_factory.registerNodeType<CollectObjectPose>("CollectObjectPose", node);
@@ -127,6 +140,8 @@ int main(int argc, char * argv[])
     bt_factory.registerNodeType<Explore>("Explore", node);
     bt_factory.registerNodeType<CheckLocomotionStatus>("CheckLocomotionStatus", node);
     bt_factory.registerNodeType<SendNavPose>("SendNavPose", node);
+    bt_factory.registerNodeType<AcquireImage>("AcquireImage", node);
+    bt_factory.registerNodeType<DefineInspectionGoals>("DefineInspectionGoals", node);
 
     BT::Tree tree = bt_factory.createTreeFromFile(bt_file);
 

@@ -14,10 +14,56 @@
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
 
+#include "rclcpp/rclcpp.hpp"
+
+/*
+  Task ID:  
+      - 1 Find/Reach Object
+      - 2 Inspect Object
+*/
+
+#define INSPECTION_IMAGES 5
+
+class Task{
+  public:
+
+    Task(unsigned int task_id = 0, std::string object_name="obj"):
+      id(task_id), object_name(object_name), nav_targets({}),
+      inspection_steps(0), images_collected(0)
+    {}
+
+    geometry_msgs::msg::Pose getLastNavTarget(){
+      if(inspection_steps < 0 || inspection_steps >= static_cast<int>(nav_targets.size()))
+         return geometry_msgs::msg::Pose();
+
+      return nav_targets[inspection_steps];
+    }
+
+    void addNavTarget(geometry_msgs::msg::Pose nav_target){
+      nav_targets.push_back(nav_target);
+    }
+
+    int getNavTargetsNumber(){
+      return static_cast<int>(nav_targets.size());
+    }
+
+    void clearNavTargets(){
+      nav_targets.clear();
+      inspection_steps = 0;
+    }    
+    
+    unsigned int id;
+    std::string object_name;
+    int inspection_steps, images_collected;
+
+    private:
+      std::vector<geometry_msgs::msg::Pose> nav_targets;
+};
+
 class SharedClass
 {
   public:
-    std::string object_name, world_frame, base_frame;
+    std::string world_frame, base_frame;
 
     geometry_msgs::msg::Pose locomotion_target;
     std::vector<frontier_extraction_msgs::msg::Frontier> frontiers;
@@ -28,17 +74,25 @@ class SharedClass
     rclcpp::Time now;
 
     float min_nav_target_distance;
-    bool known_object_pose, force_frontier_update;
+    bool known_object_pose, force_frontier_update, acquire_image;
+
+    std::vector<Task> tasks;
+    
+    int current_task;
 
     //Constructor
     SharedClass(){
-      object_name = "obj";
+      tasks = {};
+      current_task = 0;
+
       world_frame = "map";
       base_frame = "base_link";
+
       frontiers = {};
       active_task = false;
       need_exploration = false;
       is_driving = false;
+      acquire_image = false;
       finished_exploration = false;
       known_object_pose = false;
       force_frontier_update = false;

@@ -7,3 +7,5 @@ geometry_msgs/Point robot_pos
 geometry_msgs/Pose nav_target_pose
 uint8 frontiers_number
 bool finished
+uint8 task_id
+uint8 images_collected
