@@ -20,7 +20,7 @@ BT::NodeStatus SendNavPose::tick(){
 
     RCLCPP_DEBUG(node_->get_logger(), "SendNavPose");
     candidate_nav_target_req_->reference_frame = bt_data_->world_frame;
-    candidate_nav_target_req_->change_orientation = true;
+    candidate_nav_target_req_->rotate_to_point = false;
 
     //1. Update the intermediate target (based on the task)
 
@@ -62,15 +62,17 @@ BT::NodeStatus SendNavPose::tick(){
 
         if(temp_nav_pose_ != candidate_nav_target_req_->target_pose){
             RCLCPP_INFO(node_->get_logger(), "New goal: %f %f --> %f %f", candidate_nav_target_req_->target_pose.position.x,
-                                                                            candidate_nav_target_req_->target_pose.position.y,
-                                                                            temp_nav_pose_.position.x,
-                                                                            temp_nav_pose_.position.y);
+                                                                          candidate_nav_target_req_->target_pose.position.y,
+                                                                          temp_nav_pose_.position.x,
+                                                                          temp_nav_pose_.position.y);
             bt_data_->locomotion_target = temp_nav_pose_;
             updated_nav_ = true;
         }
         
-        candidate_nav_target_req_->change_orientation = false;
-        
+        candidate_nav_target_req_->point_to_face.x = bt_data_->object_pose.transform.translation.x;
+        candidate_nav_target_req_->point_to_face.y = bt_data_->object_pose.transform.translation.y;
+        candidate_nav_target_req_->point_to_face.z = bt_data_->object_pose.transform.translation.z;
+
         //Compute distance to previous nav target
         distance_to_nav_target_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x, 2) +
                                   pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y, 2);
