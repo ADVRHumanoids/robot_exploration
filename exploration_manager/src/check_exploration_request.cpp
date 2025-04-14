@@ -18,6 +18,8 @@ CheckExplorationRequest::CheckExplorationRequest(const std::string& name,
     //Service Client for Nav2 goal cancelling
     cancel_nav_goal_srv_ = node_->create_client<action_msgs::srv::CancelGoal>("/navigate_to_pose/_action/cancel_goal");
     cancel_nav_goal_req_ = std::make_shared<action_msgs::srv::CancelGoal::Request>();
+    bt_data_->ros_status.cancel_nav_srv = cancel_nav_goal_srv_->wait_for_service(20s);
+
 
     resetState();
 }

@@ -78,6 +78,15 @@ class ExploratioMain : public rclcpp::Node
         exp_status_msg_.frontiers_number = bt_data_->frontiers.size();
         exp_status_msg_.finished = !bt_data_->active_task;
 
+        //Set ROS2 Client Status
+        exp_status_msg_.save_img_srv = bt_data_->ros_status.save_img_srv;
+        exp_status_msg_.cancel_nav_srv = bt_data_->ros_status.cancel_nav_srv;
+        exp_status_msg_.get_frontiers_srv = bt_data_->ros_status.get_frontiers_srv;
+        exp_status_msg_.nav_to_pose_srv = bt_data_->ros_status.nav_to_pose_srv;
+        exp_status_msg_.get_objects_srv = bt_data_->ros_status.get_objects_srv;
+        exp_status_msg_.get_insp_goals_srv = bt_data_->ros_status.get_insp_goals_srv;
+        exp_status_msg_.send_cand_target_srv = bt_data_->ros_status.send_cand_target_srv;
+
         exp_status_pub_->publish(exp_status_msg_);
     }
 

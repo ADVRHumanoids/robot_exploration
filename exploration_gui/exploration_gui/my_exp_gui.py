@@ -73,7 +73,16 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
         self.saved_frame.setVisible(False)
         self.save_frame_timer = 0
 
-        # ROS Setupz
+        # ROS2 STATUS TAB
+        self.save_img_label = self.findChild(QtWidgets.QLabel, "save_img_label")
+        self.cancel_goal_label = self.findChild(QtWidgets.QLabel, "cancel_goal_label")
+        self.get_frontiers_label = self.findChild(QtWidgets.QLabel, "get_frontiers_label")
+        self.nav_to_pose_label = self.findChild(QtWidgets.QLabel, "nav_to_pose_label")
+        self.get_objects_label = self.findChild(QtWidgets.QLabel, "get_objects_label")
+        self.get_inspect_label = self.findChild(QtWidgets.QLabel, "get_inspect_label")
+        self.set_cand_target_label = self.findChild(QtWidgets.QLabel, "set_cand_target_label")
+
+        # ROS Setup
         #RequestExploration Action Client
         self.req_exploration_action_srv = ActionClient(self.node, RequestExploration, '/request_exploration')
         self.req_exploration_action_srv.wait_for_server()
@@ -155,18 +164,20 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
     def updateGUI(self):
 
         if self.tab_widget.currentIndex() == 0:
-            self.updateStatusTab()
+            self.updateExplorationStatusTab()
         elif self.tab_widget.currentIndex() == 1:
             self.updateSendGoalTab()
         elif self.tab_widget.currentIndex() == 2:
             self.updateObjectsTab()
         elif self.tab_widget.currentIndex() == 3:
             self.updateDataManagerTab()
+        elif self.tab_widget.currentIndex() == 4:
+            self.updateRosStatusTab()
 
     def can_update_objs(self):
         return self.update_objs_needed
 
-    def updateStatusTab(self):
+    def updateExplorationStatusTab(self):
         # Update based on ROS params
         if self.exploration_status != []:
             if not self.exploration_status.active_task or self.exploration_status.finished:
@@ -237,3 +248,20 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
         if self.save_frame_timer != 0:
             if time.time() - self.save_frame_timer > 1.0:
                 self.saved_frame.setVisible(False)
+
+    def updateRosStatusTab(self):
+        self.fillStatusLabel(self.exploration_status.save_img_srv, self.save_img_label)
+        self.fillStatusLabel(self.exploration_status.cancel_nav_srv, self.cancel_goal_label)
+        self.fillStatusLabel(self.exploration_status.get_frontiers_srv, self.get_frontiers_label)
+        self.fillStatusLabel(self.exploration_status.nav_to_pose_srv, self.nav_to_pose_label)
+        self.fillStatusLabel(self.exploration_status.get_objects_srv, self.get_objects_label)
+        self.fillStatusLabel(self.exploration_status.get_insp_goals_srv, self.get_inspect_label)
+        self.fillStatusLabel(self.exploration_status.send_cand_target_srv, self.set_cand_target_label)
+
+    def fillStatusLabel(self, status_val, status_obj):
+        if status_val:
+            status_obj.setText("Active")
+            status_obj.setStyleSheet("QLabel {color : green; }")
+        else:
+            status_obj.setText("Not Active")
+            status_obj.setStyleSheet("QLabel {color : red; }")

@@ -43,7 +43,6 @@ class CollectObjectPose : public BT::SyncActionNode
     object_detection_srvs::srv::GetObjectsInfo::Response::SharedPtr get_objects_res_;
 
     double angle_, distance_to_object_pose_;
-    bool service_available_;
 };
 
 #endif

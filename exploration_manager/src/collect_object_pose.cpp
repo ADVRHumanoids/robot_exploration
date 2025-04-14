@@ -7,13 +7,13 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
 {
     //Service Client
     get_objects_info_srv_ = node_->create_client<object_detection_srvs::srv::GetObjectsInfo>("/get_objects_info");
+    bt_data_->ros_status.get_objects_srv = get_objects_info_srv_->wait_for_service(20s);
+
 
     get_objects_req_ = std::make_shared<object_detection_srvs::srv::GetObjectsInfo::Request>();
     get_objects_res_ = nullptr;
     
-    service_available_ = get_objects_info_srv_->wait_for_service(20s);
-
-    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Service is %sAVILABLE!", ((service_available_)?"":"UN"));    
+    RCLCPP_INFO(node_->get_logger(), "CollectObjectPose: Service is %sAVILABLE!", ((bt_data_->ros_status.get_objects_srv)?"":"UN"));    
 }
 
 BT::NodeStatus CollectObjectPose::tick(){
@@ -25,7 +25,7 @@ BT::NodeStatus CollectObjectPose::tick(){
     else
         return BT::NodeStatus::FAILURE;
 
-    if(service_available_){
+    if(bt_data_->ros_status.get_objects_srv){
         get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_).share();
         get_objects_res_ = get_objects_fut_.get(); // Blocking call
     }

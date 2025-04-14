@@ -7,6 +7,7 @@ SendNavPose::SendNavPose(const std::string& name,
 {   
     //Service Client
     send_candidate_nav_target_ = node_->create_client<centauro_ros_nav_srvs::srv::SendCandidateNavTarget>("/set_candidate_nav_target");
+    bt_data_->ros_status.send_cand_target_srv = send_candidate_nav_target_->wait_for_service(20s);
 
     candidate_nav_target_req_ = std::make_shared<centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Request>();
 

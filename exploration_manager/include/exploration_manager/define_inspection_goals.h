@@ -39,7 +39,6 @@ class DefineInspectionGoals : public BT::SyncActionNode
     define_inspection_goals_srvs::srv::GetInspectionGoals::Request::SharedPtr get_insp_goals_req_;
     rclcpp::Client< define_inspection_goals_srvs::srv::GetInspectionGoals>::SharedFuture get_insp_goals_fut_;
     define_inspection_goals_srvs::srv::GetInspectionGoals::Response::SharedPtr get_insp_goals_res_;
-    bool service_available_;
 
     double angle_;
     double min_distance_to_object_, max_distance_to_object_;

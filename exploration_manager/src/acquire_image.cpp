@@ -8,6 +8,8 @@ AcquireImage::AcquireImage(const std::string& name,
     //Service Client
     acquire_image_srv_ = node_->create_client<std_srvs::srv::Trigger>("/save_image");
     acquire_image_req_ = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    bt_data_->ros_status.save_img_srv = acquire_image_srv_->wait_for_service(20s);    
 }
 
 BT::NodeStatus AcquireImage::tick(){

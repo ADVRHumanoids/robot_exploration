@@ -24,6 +24,20 @@
 
 #define INSPECTION_IMAGES 5
 
+using namespace std::chrono_literals;
+
+class RosClientsStatus{
+  public:
+
+    RosClientsStatus():
+      save_img_srv(false), send_cand_target_srv(false), cancel_nav_srv(false), nav_to_pose_srv(false),
+      get_frontiers_srv(false), get_objects_srv(false), get_insp_goals_srv(false)
+    {}
+
+    bool save_img_srv, send_cand_target_srv, cancel_nav_srv, nav_to_pose_srv;
+    bool get_frontiers_srv, get_objects_srv, get_insp_goals_srv;
+};
+
 class Task{
   public:
 
@@ -77,11 +91,14 @@ class SharedClass
     bool known_object_pose, force_frontier_update, acquire_image;
 
     std::vector<Task> tasks;
+
+    RosClientsStatus ros_status;
     
     int current_task;
 
     //Constructor
     SharedClass(){
+      tasks.reserve(2);
       tasks = {};
       current_task = 0;
 

@@ -7,10 +7,13 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
 {   
     //Frontier Extraction Client
     frontier_extract_srv_ = node_->create_client<frontier_extraction_srvs::srv::GetFrontiers>("/get_frontiers");
-    
+    bt_data_->ros_status.get_frontiers_srv = frontier_extract_srv_->wait_for_service(20s);
+
     //Nav2 Action Client
     nav2_client_ptr_ = rclcpp_action::create_client<NavigateToPose>(node_,
                                                                     "/navigate_to_pose");
+    bt_data_->ros_status.nav_to_pose_srv = nav2_client_ptr_->wait_for_action_server(20s);
+
     //Param get
     node_->declare_parameter("robot_exploration.exploration.timer_frontiers", 5.0);
     timer_frontiers_ = node_->get_parameter("robot_exploration.exploration.timer_frontiers").as_double();
