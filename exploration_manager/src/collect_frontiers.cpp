@@ -7,12 +7,12 @@ CollectFrontiers::CollectFrontiers(const std::string& name,
 {   
     //Frontier Extraction Client
     frontier_extract_srv_ = node_->create_client<frontier_extraction_srvs::srv::GetFrontiers>("/get_frontiers");
-    bt_data_->ros_status.get_frontiers_srv = frontier_extract_srv_->wait_for_service(20s);
+    bt_data_->ros_status.get_frontiers_srv = frontier_extract_srv_->wait_for_service(10s);
 
     //Nav2 Action Client
     nav2_client_ptr_ = rclcpp_action::create_client<NavigateToPose>(node_,
                                                                     "/navigate_to_pose");
-    bt_data_->ros_status.nav_to_pose_srv = nav2_client_ptr_->wait_for_action_server(20s);
+    bt_data_->ros_status.nav_to_pose_srv = nav2_client_ptr_->wait_for_action_server(10s);
 
     //Param get
     node_->declare_parameter("robot_exploration.exploration.timer_frontiers", 5.0);
@@ -50,6 +50,13 @@ BT::NodeStatus CollectFrontiers::tick(){
 
     // RCLCPP_INFO(node_->get_logger(), "Timer: %f", time_diff_);
 
+    if(!bt_data_->ros_status.get_frontiers_srv){
+        //Try again
+        bt_data_->ros_status.get_frontiers_srv = frontier_extract_srv_->wait_for_service(1s);
+        RCLCPP_WARN(node_->get_logger(), "Frontier Service Unavailable!");
+        return BT::NodeStatus::FAILURE;
+    }
+
     if(time_diff_ > timer_frontiers_ || bt_data_->force_frontier_update){
         
         RCLCPP_INFO(node_->get_logger(), "CollectFrontiers: Timer: %f - ForceUpdate: %d", time_diff_, bt_data_->force_frontier_update);
@@ -74,7 +81,13 @@ BT::NodeStatus CollectFrontiers::tick(){
         if(bt_data_->frontiers.size() == 0){
             RCLCPP_INFO(node_->get_logger(), "No more frontiers! Exploration finished!");
             //Cancel Nav Pose
-            nav2_client_ptr_->async_cancel_all_goals();
+            if(!bt_data_->ros_status.nav_to_pose_srv){
+                //Try again
+                bt_data_->ros_status.nav_to_pose_srv = nav2_client_ptr_->wait_for_action_server(1s);
+                RCLCPP_WARN(node_->get_logger(), "Nav2 ActionServer (Cancel Nav Goal) Unavailable!");
+            }
+            else
+                nav2_client_ptr_->async_cancel_all_goals();
 
             bt_data_->need_exploration = false;
             bt_data_->is_driving = false;

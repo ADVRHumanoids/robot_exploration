@@ -7,7 +7,7 @@ SendNavPose::SendNavPose(const std::string& name,
 {   
     //Service Client
     send_candidate_nav_target_ = node_->create_client<centauro_ros_nav_srvs::srv::SendCandidateNavTarget>("/set_candidate_nav_target");
-    bt_data_->ros_status.send_cand_target_srv = send_candidate_nav_target_->wait_for_service(20s);
+    bt_data_->ros_status.send_cand_target_srv = send_candidate_nav_target_->wait_for_service(10s);
 
     candidate_nav_target_req_ = std::make_shared<centauro_ros_nav_srvs::srv::SendCandidateNavTarget::Request>();
 
@@ -22,6 +22,13 @@ BT::NodeStatus SendNavPose::tick(){
     RCLCPP_DEBUG(node_->get_logger(), "SendNavPose");
     candidate_nav_target_req_->reference_frame = bt_data_->world_frame;
     candidate_nav_target_req_->rotate_to_point = false;
+
+    if(!bt_data_->ros_status.send_cand_target_srv){
+        //Try again
+        bt_data_->ros_status.send_cand_target_srv = send_candidate_nav_target_->wait_for_service(1s);
+        RCLCPP_WARN(node_->get_logger(), "SendCandidateTarget Server Unavailable"); 
+        return BT::NodeStatus::FAILURE;
+    }
 
     //1. Update the intermediate target (based on the task)
 
@@ -137,7 +144,7 @@ BT::NodeStatus SendNavPose::tick(){
     candidate_nav_target_req_->robot_pose.orientation.y = bt_data_->last_robot_pose.transform.rotation.y;
     candidate_nav_target_req_->robot_pose.orientation.z = bt_data_->last_robot_pose.transform.rotation.z;
     candidate_nav_target_req_->robot_pose.orientation.w = bt_data_->last_robot_pose.transform.rotation.w;
-
+    
     candidate_nav_target_fut_ = send_candidate_nav_target_->async_send_request(candidate_nav_target_req_).share();
     candidate_nav_target_res_ = candidate_nav_target_fut_.get(); // Blocking call
 

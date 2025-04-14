@@ -8,7 +8,7 @@ DefineInspectionGoals::DefineInspectionGoals(const std::string& name,
 
     //Service Client
     get_insp_goals_srv_ = node_->create_client<define_inspection_goals_srvs::srv::GetInspectionGoals>("/get_inspection_goals");
-    bt_data_->ros_status.get_insp_goals_srv = get_insp_goals_srv_->wait_for_service(20s);
+    bt_data_->ros_status.get_insp_goals_srv = get_insp_goals_srv_->wait_for_service(10s);
 
 
     get_insp_goals_req_ = std::make_shared<define_inspection_goals_srvs::srv::GetInspectionGoals::Request>();
@@ -40,6 +40,11 @@ BT::NodeStatus DefineInspectionGoals::tick(){
 
             for(auto p : get_insp_goals_res_->poses)
                 bt_data_->tasks[bt_data_->current_task].addNavTarget(p);
+        }
+        else{
+            //Try again
+            bt_data_->ros_status.get_insp_goals_srv = get_insp_goals_srv_->wait_for_service(1s);
+            RCLCPP_WARN(node_->get_logger(), "GetInspectionGoals Server Unavailable!"); 
         }
     }
     

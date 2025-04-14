@@ -18,8 +18,7 @@ CheckExplorationRequest::CheckExplorationRequest(const std::string& name,
     //Service Client for Nav2 goal cancelling
     cancel_nav_goal_srv_ = node_->create_client<action_msgs::srv::CancelGoal>("/navigate_to_pose/_action/cancel_goal");
     cancel_nav_goal_req_ = std::make_shared<action_msgs::srv::CancelGoal::Request>();
-    bt_data_->ros_status.cancel_nav_srv = cancel_nav_goal_srv_->wait_for_service(20s);
-
+    bt_data_->ros_status.cancel_nav_srv = cancel_nav_goal_srv_->wait_for_service(10s);
 
     resetState();
 }
@@ -50,16 +49,32 @@ BT::NodeStatus CheckExplorationRequest::tick(){
         action_goal_handle_->succeed(action_result_);
 
         //Reset goal handle
+        if(!bt_data_->ros_status.cancel_nav_srv){
+            //Try again
+            bt_data_->ros_status.cancel_nav_srv = cancel_nav_goal_srv_->wait_for_service(1s);
+            RCLCPP_WARN(node_->get_logger(), "CancelGoal Srv Unavailable");
+            return BT::NodeStatus::FAILURE;
+        }
+        
         action_goal_handle_ = nullptr;
         cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);
         resetState();
+
         return BT::NodeStatus::FAILURE;
     }
     else if(action_goal_handle_->is_canceling()){
         // action_result_->found = false;
         // action_goal_handle_->canceled(action_result_);
         RCLCPP_INFO(node_->get_logger(), "Goal canceled - Stop Robot Nav");
-        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);   
+        
+        if(!bt_data_->ros_status.cancel_nav_srv){
+            //Try again
+            bt_data_->ros_status.cancel_nav_srv = cancel_nav_goal_srv_->wait_for_service(1s);
+            RCLCPP_WARN(node_->get_logger(), "CancelGoal Srv Unavailable");
+            return BT::NodeStatus::FAILURE;
+        }
+
+        cancel_nav_goal_srv_->async_send_request(cancel_nav_goal_req_);
         bt_data_->is_driving = false;
 
         resetState();

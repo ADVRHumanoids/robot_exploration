@@ -7,7 +7,7 @@ CollectObjectPose::CollectObjectPose(const std::string& name,
 {
     //Service Client
     get_objects_info_srv_ = node_->create_client<object_detection_srvs::srv::GetObjectsInfo>("/get_objects_info");
-    bt_data_->ros_status.get_objects_srv = get_objects_info_srv_->wait_for_service(20s);
+    bt_data_->ros_status.get_objects_srv = get_objects_info_srv_->wait_for_service(10s);
 
 
     get_objects_req_ = std::make_shared<object_detection_srvs::srv::GetObjectsInfo::Request>();
@@ -28,6 +28,12 @@ BT::NodeStatus CollectObjectPose::tick(){
     if(bt_data_->ros_status.get_objects_srv){
         get_objects_fut_ = get_objects_info_srv_->async_send_request(get_objects_req_).share();
         get_objects_res_ = get_objects_fut_.get(); // Blocking call
+    }
+    else{
+        //Try again
+        bt_data_->ros_status.get_objects_srv = get_objects_info_srv_->wait_for_service(1s);
+        RCLCPP_WARN(node_->get_logger(), "CollectObjectPose: Objects Server Unavailable!");    
+        get_objects_res_ = nullptr;    
     }
 
     if (get_objects_res_ != nullptr && get_objects_res_->objects_data.size() > 0){

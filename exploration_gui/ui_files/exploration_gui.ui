@@ -823,7 +823,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -865,7 +865,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -907,7 +907,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -949,7 +949,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -1012,7 +1012,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -1033,7 +1033,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -1075,7 +1075,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Not Active</string>
+       <string>Initializing</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>

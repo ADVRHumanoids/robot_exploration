@@ -250,13 +250,14 @@ class MyExplorationGUI(QtWidgets.QMainWindow):
                 self.saved_frame.setVisible(False)
 
     def updateRosStatusTab(self):
-        self.fillStatusLabel(self.exploration_status.save_img_srv, self.save_img_label)
-        self.fillStatusLabel(self.exploration_status.cancel_nav_srv, self.cancel_goal_label)
-        self.fillStatusLabel(self.exploration_status.get_frontiers_srv, self.get_frontiers_label)
-        self.fillStatusLabel(self.exploration_status.nav_to_pose_srv, self.nav_to_pose_label)
-        self.fillStatusLabel(self.exploration_status.get_objects_srv, self.get_objects_label)
-        self.fillStatusLabel(self.exploration_status.get_insp_goals_srv, self.get_inspect_label)
-        self.fillStatusLabel(self.exploration_status.send_cand_target_srv, self.set_cand_target_label)
+        if self.exploration_status != []:
+            self.fillStatusLabel(self.exploration_status.save_img_srv, self.save_img_label)
+            self.fillStatusLabel(self.exploration_status.cancel_nav_srv, self.cancel_goal_label)
+            self.fillStatusLabel(self.exploration_status.get_frontiers_srv, self.get_frontiers_label)
+            self.fillStatusLabel(self.exploration_status.nav_to_pose_srv, self.nav_to_pose_label)
+            self.fillStatusLabel(self.exploration_status.get_objects_srv, self.get_objects_label)
+            self.fillStatusLabel(self.exploration_status.get_insp_goals_srv, self.get_inspect_label)
+            self.fillStatusLabel(self.exploration_status.send_cand_target_srv, self.set_cand_target_label)
 
     def fillStatusLabel(self, status_val, status_obj):
         if status_val:
