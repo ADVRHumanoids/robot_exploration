@@ -78,17 +78,17 @@ BT::NodeStatus SendNavPose::tick(){
                                   pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y, 2);
 
         //yaw_error        
-        float rob_yaw = atan2(2.0*(bt_data_->last_robot_pose.transform.rotation.x*bt_data_->last_robot_pose.transform.rotation.y +
-                                    bt_data_->last_robot_pose.transform.rotation.w*bt_data_->last_robot_pose.transform.rotation.z),
-                            1.0 - 2.0*(bt_data_->last_robot_pose.transform.rotation.y*bt_data_->last_robot_pose.transform.rotation.y +
-                                        bt_data_->last_robot_pose.transform.rotation.z*bt_data_->last_robot_pose.transform.rotation.z));
+        rob_yaw_ = atan2(2.0*(bt_data_->last_robot_pose.transform.rotation.x*bt_data_->last_robot_pose.transform.rotation.y +
+                              bt_data_->last_robot_pose.transform.rotation.w*bt_data_->last_robot_pose.transform.rotation.z),
+                         1.0 - 2.0*(bt_data_->last_robot_pose.transform.rotation.y*bt_data_->last_robot_pose.transform.rotation.y +
+                                    bt_data_->last_robot_pose.transform.rotation.z*bt_data_->last_robot_pose.transform.rotation.z));
 
-        float nav_yaw = atan2(2.0*(bt_data_->locomotion_target.orientation.x*bt_data_->locomotion_target.orientation.y + 
-                                    bt_data_->locomotion_target.orientation.w*bt_data_->locomotion_target.orientation.z),
-                                1.0 - 2.0*(bt_data_->locomotion_target.orientation.y*bt_data_->locomotion_target.orientation.y + 
-                                        bt_data_->locomotion_target.orientation.z*bt_data_->locomotion_target.orientation.z));
+        nav_yaw_ = atan2(2.0*(bt_data_->locomotion_target.orientation.x*bt_data_->locomotion_target.orientation.y + 
+                              bt_data_->locomotion_target.orientation.w*bt_data_->locomotion_target.orientation.z),
+                         1.0 - 2.0*(bt_data_->locomotion_target.orientation.y*bt_data_->locomotion_target.orientation.y + 
+                                    bt_data_->locomotion_target.orientation.z*bt_data_->locomotion_target.orientation.z));
 
-        angle_ = nav_yaw - rob_yaw;
+        angle_ = nav_yaw_ - rob_yaw_;
         
         angle_ = fabs(angle_);
         if(angle_ > 6.28)
@@ -108,7 +108,7 @@ BT::NodeStatus SendNavPose::tick(){
         if(!bt_data_->is_driving)
             RCLCPP_INFO(node_->get_logger(), "Inspection Target (%d/%d) to better define (sqr distance: %f, AngR: %f, AngT: %f)", 
                                             bt_data_->tasks[bt_data_->current_task].inspection_steps, INSPECTION_IMAGES,
-                                            distance_to_nav_target_, rob_yaw, nav_yaw);
+                                            distance_to_nav_target_, rob_yaw_, nav_yaw_);
 
         //If the previous target is almost the same as the new one, do not send again (< 10cm)
         if(//bt_data_->is_driving && //!bt_data_->force_frontier_update && 

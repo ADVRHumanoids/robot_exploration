@@ -43,17 +43,18 @@ namespace frontier_extraction{
         std::vector<std::pair<point3d, int>> frontier_points_;  //point, cluster ID
         std::vector<std::pair<point3d, int>> frontier_clusters_; //centroid, n° points
        
-
         octomap::OcTreeNode *n_cur_frontier_;
         bool frontier_true_;         // whether or not a frontier point
         bool only_ground_frontiers_;
         double distance_, max_point_distance_gain_, max_dist_z_gain_;
         int num_occupied_, num_occupied_up_, tree_depth_;
-        double depth_gain_resolution_;
+        double depth_gain_resolution_, updated_resolution_, tree_resolution_;
 
         int max_occupied_same_lv_, max_occupied_up_lv_;
 
         int min_frontier_points_;
+        int extraction_id_, markers_id_;
+        double max_distance_;
 
         // ----- Private Methods ----
         void initNode();

@@ -41,7 +41,7 @@ namespace frontier_extraction{
         // Extract Frontiers
         extractFrontiers(request->robot_pose);
         
-        RCLCPP_INFO(this->get_logger(), "Frontier Points added: %ld", frontier_points_.size());
+        RCLCPP_DEBUG(this->get_logger(), "Frontier Points added: %ld", frontier_points_.size());
         
         // Publish frontiers and set service response
         printMarkers();
@@ -53,6 +53,9 @@ namespace frontier_extraction{
 
     void Frontier2DExtractionManager::setFrontierResponse(std::shared_ptr<frontier_extraction_srvs::srv::GetFrontiers::Response> response)
     {
+        //NOTE: This may reserve more slots than actual frontiers
+        response->frontiers.reserve(frontiers_dim_.size());
+
         // Fill response message with frontiers bigger than X pixels
         for(int i = 0; i < static_cast<int>(frontiers_dim_.size()); i++){
             if(frontiers_dim_[i] >= min_frontier_points_){
@@ -77,29 +80,29 @@ namespace frontier_extraction{
 
     void Frontier2DExtractionManager::innerExtractFrontiers(const int idx){
         
-        int temp = idx;
-        bool frontier_found = false;
+        frontier_found_ = false;
 
-        for(i = -1; i <= 1; i++){
-            for(j = -1; j <= 1; j++){
+        for(j = -1; j <= 1; j++){
+            temp_idx_ = idx + j*width_;
+            for(i = -1; i <= 1; i++){
                 if((i == 0 && j == 0) || (abs(i) == abs(j)))
                     continue;
 
-                temp = idx + i + j*width_;
+                temp_inner_idx_ = temp_idx_ + i;
 
-                if(isValidCell(temp)){
-                    if(!frontier_found && isFrontier(idx, temp)){
+                if(isValidCell(temp_inner_idx_)){
+                    if(!frontier_found_ && isFrontier(idx, temp_inner_idx_)){
                         frontier_points_.insert(idx);
-                        frontier_found = true;
+                        frontier_found_ = true;
                     }
-                    if(visited_.find(temp) == visited_.end())
-                        to_visit_.insert(temp);
+                    if(visited_.find(temp_inner_idx_) == visited_.end())
+                        to_visit_.insert(temp_inner_idx_);
                 }
             }
         }
     }
 
-    void Frontier2DExtractionManager::extractFrontiers(geometry_msgs::msg::Point robot_pose){
+    void Frontier2DExtractionManager::extractFrontiers(const geometry_msgs::msg::Point& robot_pose){
 
         resolution_ = occupancy_->info.resolution;
         width_ = occupancy_->info.width;
@@ -151,7 +154,10 @@ namespace frontier_extraction{
         marker_id_ = 0;
 
         clearMarkers();
-   
+
+        marker_array_.markers.reserve(frontier_points_.size() +
+                                      centroids_.size());
+
         for(auto itr : frontier_points_){
             visualization_msgs::msg::Marker marker;
 

@@ -38,6 +38,8 @@ class SendNavPose : public BT::SyncActionNode
     geometry_msgs::msg::Pose temp_nav_pose_;
     double distance_to_nav_target_, distance_to_object_pose_, angle_;
     bool updated_nav_;
+
+    double rob_yaw_, nav_yaw_;
 };
 
 #endif

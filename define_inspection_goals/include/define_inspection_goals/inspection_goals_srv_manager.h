@@ -38,6 +38,7 @@ namespace inspection_goals{
 
         double ang_resolution_, rotation_to_check_;
         double temp_sin_, temp_cos_, temp_ang_, temp_distance_, distance_resolution_; 
+        double temp_double_val_;
 
 
         // ----- Private Methods ----

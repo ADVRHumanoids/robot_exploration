@@ -32,10 +32,8 @@ namespace frontier_extraction{
             [this](octomap_msgs::msg::Octomap::SharedPtr msg) -> void {
                 octomap_msg_ = msg;
 
-                if(octomap_msg_ != nullptr){
-                    //TODO
+                if(octomap_msg_ != nullptr)
                     octree_ = dynamic_cast<octomap::OcTree*>(octomap_msgs::fullMsgToMap(*octomap_msg_));
-                }
             };
 
         octomap_sub_ = this->create_subscription<octomap_msgs::msg::Octomap>("/local/octomap_full", 10, octomapCallback);
@@ -61,41 +59,48 @@ namespace frontier_extraction{
         this->declare_parameter("frontier_check.max_occupied_up_lv", 3);
         max_occupied_up_lv_ = this->get_parameter("frontier_check.max_occupied_up_lv").as_int();
 
+        tree_resolution_ = 0.0;
+
         frontier_points_ = {};
         frontier_clusters_ = {};
     }
-    
+
     void Frontier3DExtractionManager::getFrontiersSrv(const std::shared_ptr<frontier_extraction_srvs::srv::GetFrontiers::Request>  request,
                                                       std::shared_ptr<frontier_extraction_srvs::srv::GetFrontiers::Response> response)
     {
         if(octree_ == nullptr)
             return ;
 
-        auto t1 = high_resolution_clock::now();
+        // auto t1 = high_resolution_clock::now();
 
-        if(tree_depth_ > octree_->getTreeDepth()){
+        if(tree_resolution_ == 0.0 || tree_depth_ > octree_->getTreeDepth()){
             tree_depth_ = octree_->getTreeDepth();
             depth_gain_resolution_ = pow(2.0, static_cast<double>(16 - tree_depth_));
-        }
+            tree_resolution_ = octree_->getResolution();
 
+            updated_resolution_ = depth_gain_resolution_*tree_resolution_;
+            max_distance_ = max_point_distance_gain_*depth_gain_resolution_*tree_resolution_;
+            max_distance_ *= max_distance_; //Consider squared
+        }
+        
         pelvis_pos_map_.x() = request->robot_pose.x;
         pelvis_pos_map_.y() = request->robot_pose.y;
         pelvis_pos_map_.z() = request->robot_pose.z;
 
         extractFrontiers();        
-        auto t2 = high_resolution_clock::now();
+        // auto t2 = high_resolution_clock::now();
 
         // RCLCPP_INFO(this->get_logger(), "Frontier Points added: %ld", static_cast<int>(frontier_points_.size()));
         
         // Publish frontiers and set service response
         printMarkers();
-        auto t3 = high_resolution_clock::now();
+        // auto t3 = high_resolution_clock::now();
 
         marker_pub_->publish(marker_array_);
         
-        duration<double, std::milli> ms_double = t2 - t1;
+        // duration<double, std::milli> ms_double = t2 - t1;
         // RCLCPP_INFO(this->get_logger(), "Extract Frontiers: %f", ms_double.count());
-        ms_double = t3 - t2;
+        // ms_double = t3 - t2;
         // RCLCPP_INFO(this->get_logger(), "Markers: %f", ms_double.count());
 
         setFrontierResponse(response);
@@ -103,6 +108,9 @@ namespace frontier_extraction{
 
     void Frontier3DExtractionManager::setFrontierResponse(std::shared_ptr<frontier_extraction_srvs::srv::GetFrontiers::Response> response)
     {
+        //NOTE: This may reserve more slots than actual frontiers
+        response->frontiers.reserve(frontier_clusters_.size());
+
         // Fill response message with frontiers bigger than X pixels
         for(int i = 0; i < static_cast<int>(frontier_clusters_.size()); i++){
             if(frontier_clusters_[i].second >= min_frontier_points_){
@@ -123,8 +131,6 @@ namespace frontier_extraction{
         //if there are unknown around the cube, the cube is frontier
         num_occupied_ = 0;
         
-        double updated_resolution_ = depth_gain_resolution_*octree_->getResolution();
-
         // Check neighbors at the same level (Z) of the candidate 
         for(int f_x = -1; f_x <= 1; f_x++){
             for(int f_y = -1; f_y <= 1; f_y++){
@@ -151,7 +157,7 @@ namespace frontier_extraction{
 
                 n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*updated_resolution_,
                                                           p.y() + f_y*updated_resolution_,
-                                                          p.z() + 1.0*updated_resolution_),
+                                                          p.z() + updated_resolution_),
                                                           tree_depth_);
             
                 if(n_cur_frontier_ != nullptr && octree_->isNodeOccupied(n_cur_frontier_)){
@@ -168,7 +174,7 @@ namespace frontier_extraction{
 
                 n_cur_frontier_ = octree_->search(point3d(p.x() + f_x*updated_resolution_,
                                                           p.y() + f_y*updated_resolution_,
-                                                          p.z() - 1.0*updated_resolution_),
+                                                          p.z() - updated_resolution_),
                                                           tree_depth_);
             
                 if(n_cur_frontier_ == nullptr || !octree_->isNodeOccupied(n_cur_frontier_))
@@ -181,7 +187,10 @@ namespace frontier_extraction{
 
     void Frontier3DExtractionManager::extractFrontiers(){
         frontier_points_.clear();
-        
+    
+        //NOTE: Here we can reserver memory for the frontier_points vector to avoid excessive copies
+        //      However, the leaves number is generally much higher than the frontier points.
+
         // RCLCPP_INFO(this->get_logger(), "Extract Frontiers");
         //Get Frontier Points
         //Max Tree Depth 16 --> Speed up considering higher Depth  /octree_->getTreeDepth()
@@ -197,9 +206,11 @@ namespace frontier_extraction{
 
         // RCLCPP_INFO(this->get_logger(), "Cluster Frontier Points");
         //Cluster frontier points
-        int id = 1;
-        double max_distance_ = pow(max_point_distance_gain_*depth_gain_resolution_*octree_->getResolution(), 2);
+        extraction_id_ = 1;
         
+        //NOTE: Reasonable hardcoded number
+        frontier_clusters_.reserve(15);
+
         if(static_cast<int>(frontier_points_.size()) > 0){
             frontier_points_[0].second = 1;
             frontier_clusters_.resize(2);
@@ -213,11 +224,13 @@ namespace frontier_extraction{
         for(int i = 1; i < static_cast<int>(frontier_points_.size()); i++){                 
             for(int j = 0; j < i; j++){       
 
-                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= depth_gain_resolution_*max_dist_z_gain_*octree_->getResolution())
+                if(fabs(frontier_points_[i].first.z() - frontier_points_[j].first.z()) >= depth_gain_resolution_*max_dist_z_gain_*tree_resolution_)
                     continue;
                 
-                distance_ = pow(frontier_points_[i].first.x() - frontier_points_[j].first.x(), 2) + 
-                            pow(frontier_points_[i].first.y() - frontier_points_[j].first.y(), 2);
+                distance_ = (frontier_points_[i].first.x() - frontier_points_[j].first.x())*
+                            (frontier_points_[i].first.x() - frontier_points_[j].first.x()) + 
+                            (frontier_points_[i].first.y() - frontier_points_[j].first.y())* 
+                            (frontier_points_[i].first.y() - frontier_points_[j].first.y());
                             
                 if((frontier_points_[i].first.x() - pelvis_pos_map_.x())*(frontier_points_[j].first.x() - pelvis_pos_map_.x()) > 0.0 &&
                     distance_ <= max_distance_)
@@ -257,8 +270,8 @@ namespace frontier_extraction{
             }
 
             if(frontier_points_[i].second == 0){
-                id ++;
-                frontier_points_[i].second = id;
+                extraction_id_ ++;
+                frontier_points_[i].second = extraction_id_;
 
                 frontier_clusters_.push_back({frontier_points_[i].first, 1});
             }
@@ -289,10 +302,13 @@ namespace frontier_extraction{
 
     void Frontier3DExtractionManager::printMarkers(){
 
-        int id = 0;
+        markers_id_ = 0;
 
         clearMarkers();
            
+        marker_array_.markers.reserve(frontier_points_.size() +
+                                      frontier_clusters_.size());
+        
         //Publish frontier points --> Markers
         for(int i = 0; i < static_cast<int>(frontier_points_.size()); i++){
 
@@ -325,7 +341,7 @@ namespace frontier_extraction{
             marker.pose.position.z = frontier_points_[i].first.z() + 0.025;
 
             marker.pose.orientation.w = 1.0f;
-            marker.id = (id++);
+            marker.id = (markers_id_++);
 
             marker_array_.markers.push_back(marker);
         }
@@ -342,7 +358,7 @@ namespace frontier_extraction{
             marker.color.a = 1.0;
             marker.color.r = 1.0;
 
-            marker.id = (id++);
+            marker.id = (markers_id_++);
 
             if(frontier_clusters_[i].second >= min_frontier_points_){
                 marker.pose.position.x = frontier_clusters_[i].first.x();

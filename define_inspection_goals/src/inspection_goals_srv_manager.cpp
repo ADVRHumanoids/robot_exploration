@@ -40,31 +40,29 @@ namespace inspection_goals{
 
     void InspectionGoalsSrvManager::publishMarkers(std::shared_ptr<define_inspection_goals_srvs::srv::GetInspectionGoals::Response> response)
     {
-        marker_array_.markers.clear();
-        for(auto p : response->poses)
+        marker_array_.markers.resize(response->poses.size());
+
+        for(int i = 0; i < response->poses.size(); i++)
         {
-            //Add Object
-            visualization_msgs::msg::Marker marker;
+            marker_array_.markers[i].header.frame_id = "map";
+            marker_array_.markers[i].ns = "inspection_nav_goals";
+            marker_array_.markers[i].type = visualization_msgs::msg::Marker::SPHERE;
+            marker_array_.markers[i].action = visualization_msgs::msg::Marker::ADD;
+            marker_array_.markers[i].scale.x = 0.10;
+            marker_array_.markers[i].scale.y = marker_array_.markers[i].scale.x;
+            marker_array_.markers[i].scale.z = marker_array_.markers[i].scale.x;
 
-            marker.header.frame_id = "map";
-            marker.ns = "inspection_nav_goals";
-            marker.type = visualization_msgs::msg::Marker::SPHERE;
-            marker.action = visualization_msgs::msg::Marker::ADD;
-            marker.scale.x = marker.scale.y = marker.scale.z = 0.10;
-
-            marker.color.a = 1.0;
-            marker.color.r = 0.8;
-            marker.color.b = 0.0;
-            marker.color.g = 0.0;
+            marker_array_.markers[i].color.a = 1.0;
+            marker_array_.markers[i].color.r = 0.8;
+            marker_array_.markers[i].color.b = 0.0;
+            marker_array_.markers[i].color.g = 0.0;
             
-            marker.pose.position.x = p.position.x;
-            marker.pose.position.y = p.position.y;
-            marker.pose.position.z = 0.05;
+            marker_array_.markers[i].pose.position.x =  response->poses[i].position.x;
+            marker_array_.markers[i].pose.position.y =  response->poses[i].position.y;
+            marker_array_.markers[i].pose.position.z = 0.05;
 
-            marker.pose.orientation.w = 1.0f;
-            marker.id = marker_array_.markers.size();
-
-            marker_array_.markers.push_back(marker);
+            marker_array_.markers[i].pose.orientation.w = 1.0f;
+            marker_array_.markers[i].id = i;
         }
         marker_pub_->publish(marker_array_);
 
@@ -102,15 +100,17 @@ namespace inspection_goals{
             //For the considered angle, find a valid candidate target pose
             if(!validGridInRangeDistance(request->object_pos, temp_ang_)){
                 i--;
+                temp_double_val_ = ang_resolution_*0.05;
                 //If NOT successfull --> scale a portion of ang_resolution_
-                rotation_to_check_ -= ang_resolution_*0.05;
-                temp_ang_ += ang_resolution_*0.05;
+                rotation_to_check_ -= temp_double_val_;
+                temp_ang_ += temp_double_val_;
                 continue;
             }
            
+            temp_double_val_ = 0.5*(temp_ang_ + 3.14);
             //+3.14 to face the target (object)
-            temp_pose_.orientation.z = sin(0.5*(temp_ang_+3.14));
-            temp_pose_.orientation.w = cos(0.5*(temp_ang_+3.14));
+            temp_pose_.orientation.z = sin(temp_double_val_);
+            temp_pose_.orientation.w = cos(temp_double_val_);
 
             //If successfull --> scale ang_resolution_
             rotation_to_check_ -= ang_resolution_;

@@ -8,17 +8,17 @@ CheckLocomotionStatus::CheckLocomotionStatus(const std::string& name,
     // Distance from nav target
     node_->declare_parameter("robot_exploration.min_nav_target_distance", 0.85);
     min_nav_target_distance_ = node_->get_parameter("robot_exploration.min_nav_target_distance").as_double();
-    min_nav_target_distance_ = min_nav_target_distance_*min_nav_target_distance_; // Consider squared
+    min_nav_target_distance_ *= min_nav_target_distance_; // Consider squared
 
     // Distance to target object (when known pose)
     node_->declare_parameter("robot_exploration.distance_target_object", 0.85);
     distance_target_object_ = node_->get_parameter("robot_exploration.distance_target_object").as_double();
-    distance_target_object_ = distance_target_object_*distance_target_object_; // Consider squared
+    distance_target_object_ *= distance_target_object_; // Consider squared
 
     //Distance to frontier
     node_->declare_parameter("robot_exploration.min_dist_frontier_robot", 0.85);
     min_frontier_distance_ = node_->get_parameter("robot_exploration.min_dist_frontier_robot").as_double();
-    min_frontier_distance_ = min_frontier_distance_*min_frontier_distance_; // Consider squared
+    min_frontier_distance_ *= min_frontier_distance_; // Consider squared
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -48,8 +48,11 @@ BT::NodeStatus CheckLocomotionStatus::tick(){
         return BT::NodeStatus::FAILURE;
     }
 
-    temp_distance_ = pow(bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x,2) +
-                     pow(bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y,2);
+    //Squared distance
+    temp_distance_ = (bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x)*
+                     (bt_data_->last_robot_pose.transform.translation.x - bt_data_->locomotion_target.position.x) +
+                     (bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y)*
+                     (bt_data_->last_robot_pose.transform.translation.y - bt_data_->locomotion_target.position.y);
 
     //If no message --> presume not driving and start of execution
     if(status_msg_ == nullptr){

@@ -126,7 +126,7 @@ void CheckExplorationRequest::execute(const std::shared_ptr<GoalHandleRequestExp
 
     auto goal = action_goal_handle_->get_goal();
 
-    //TODO: New Task
+    //New Task
     switch(goal->task_id){
         case 1:
             bt_data_->tasks.push_back(Task(1, goal->object_name));

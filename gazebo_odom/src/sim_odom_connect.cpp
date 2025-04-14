@@ -34,7 +34,7 @@ public:
       };
     
     // Subscriber
-    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/centauro/odom", 10, odom_callback);
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/centauro/odom", 2, odom_callback);
 
     // TF broadcaster
     tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);

@@ -46,13 +46,16 @@ namespace frontier_extraction{
         int marker_id_, marker_id2_, cell_distance_;
         int i,j;
 
+        bool frontier_found_;
+        int temp_idx_, temp_inner_idx_;
+
         // ----- Private Methods ----
         void initNode();
 
         bool isValidCell(const int idx) const;
         bool isFrontier(const int idx1, const int idx2) const;
 
-        void extractFrontiers(geometry_msgs::msg::Point robot_pose);
+        void extractFrontiers(const geometry_msgs::msg::Point& robot_pose);
 
         void clearMarkers();
         void printMarkers();
