@@ -29,13 +29,17 @@ def generate_launch_description():
         default_value= 'true',
         description='Use simulation (Gazebo) clock if true',
     )
+
+    inspection_params_file = os.path.join(define_inspection_goals_dir, 'config', 'inspection_goals_params.yaml')
+
     #Launch Frontier Extraction Module
     define_inspect_goals_cmd = Node(
         package='define_inspection_goals',
         executable='inspection_goals_srv_node',
         name='inspection_goals_srv_node',
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[inspection_params_file,
+                    {'use_sim_time': use_sim_time}]
     )
     # Create the launch description and populate
     ld = LaunchDescription()

@@ -23,17 +23,27 @@ namespace inspection_goals{
                 occupancy_ = msg;
             };
 
+
+        //Get from parameter
+        this->declare_parameter("costmap_topic", "");
+        std::string costmap_topic = this->get_parameter("costmap_topic").as_string();
+
+        this->declare_parameter("world_frame", "world");
+        world_frame_ = this->get_parameter("world_frame").as_string();
+
+        this->declare_parameter("min_distance_from_obj", 1.0);
+        this->declare_parameter("max_distance_from_obj", 1.5);
+        this->declare_parameter("distance_resolution", 0.10);
+
         //Client for costmap
         costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            "/global_costmap/costmap", 10, getCostmap);
+            costmap_topic, 10, getCostmap);
 
         occupancy_ = nullptr;
+        min_distance_from_obj_ = this->get_parameter("min_distance_from_obj").as_double();
+        max_distance_from_obj_ = this->get_parameter("max_distance_from_obj").as_double();
 
-        //TODO: get from parameter
-        min_distance_from_obj_ = 1.10;
-        max_distance_from_obj_ = 1.50;
-
-        distance_resolution_ = 0.10;
+        distance_resolution_ = this->get_parameter("distance_resolution").as_double();
 
         publish_markers_ = true;
     }
@@ -44,7 +54,7 @@ namespace inspection_goals{
 
         for(int i = 0; i < response->poses.size(); i++)
         {
-            marker_array_.markers[i].header.frame_id = "map";
+            marker_array_.markers[i].header.frame_id = world_frame_;
             marker_array_.markers[i].ns = "inspection_nav_goals";
             marker_array_.markers[i].type = visualization_msgs::msg::Marker::SPHERE;
             marker_array_.markers[i].action = visualization_msgs::msg::Marker::ADD;

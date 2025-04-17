@@ -1,0 +1,11 @@
+inspection_goals_srv_node:
+  ros__parameters:
+    use_sim_time: True
+
+    costmap_topic: "/global_costmap/costmap"
+    world_frame: "map"
+
+    min_distance_from_obj: 1.10
+    max_distance_from_obj: 1.50
+
+    distance_resolution: 0.10

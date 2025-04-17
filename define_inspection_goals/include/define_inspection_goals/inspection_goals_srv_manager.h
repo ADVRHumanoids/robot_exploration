@@ -30,6 +30,7 @@ namespace inspection_goals{
 
         //
         geometry_msgs::msg::Pose temp_pose_;
+        std::string world_frame_;
         int to_move_x_, to_move_y_, temp_cell_;
         double increment_x_, increment_y_;
         double to_move_x_doub_, to_move_y_doub_;

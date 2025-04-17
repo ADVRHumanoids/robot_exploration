@@ -37,7 +37,7 @@ BT::NodeStatus AcquireImage::tick(){
         }
     }
 
-    if(!bt_data_->ros_status.save_img_srv && acquire_image_res_ != nullptr){
+    if(bt_data_->ros_status.save_img_srv && acquire_image_res_ != nullptr){
         bt_data_->tasks[bt_data_->current_task].images_collected ++;
         return BT::NodeStatus::SUCCESS;
     }
